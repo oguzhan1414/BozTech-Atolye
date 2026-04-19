@@ -156,7 +156,7 @@ const uploadPhoto = async (req, res) => {
     console.error('Fotoğraf yüklenirken hata:', error);
     res.status(500).json({
       success: false,
-      message: 'Sunucu hatası'
+      message: error.message || 'Sunucu hatası'
     });
   }
 };
