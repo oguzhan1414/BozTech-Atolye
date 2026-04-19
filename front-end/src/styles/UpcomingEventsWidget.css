@@ -1,0 +1,168 @@
+/* Upcoming Events Widget Modern Styles */
+.ue-section {
+  padding: 60px 0;
+  background: transparent;
+}
+
+.ue-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 18px;
+  margin-top: 30px;
+}
+
+.ue-card {
+  background: linear-gradient(160deg, rgba(30, 41, 59, 0.9), rgba(15, 23, 42, 0.92));
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 18px 28px -22px rgba(2, 6, 23, 0.95);
+  display: flex;
+  transition: all 0.3s ease;
+  border: 1px solid rgba(96, 165, 250, 0.2);
+}
+
+.ue-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 26px 34px -24px rgba(37, 99, 235, 0.75);
+  border-color: rgba(96, 165, 250, 0.5);
+}
+
+/* Fixed Date Box */
+.ue-date-box {
+  background: linear-gradient(145deg, #1d4ed8, #3b82f6);
+  color: white;
+  padding: 20px 16px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  min-width: 85px;
+  border-right: 1px solid rgba(0,0,0,0.05);
+}
+
+.ue-day {
+  font-size: 1.8rem;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.ue-month {
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  font-weight: 700;
+  margin-top: 6px;
+  letter-spacing: 0.5px;
+  opacity: 0.9;
+}
+
+/* Upcoming Event Details */
+.ue-content {
+  padding: 20px;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.ue-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 8px;
+  gap: 12px;
+}
+
+.ue-title {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: #e2e8f0;
+  margin: 0;
+  line-height: 1.3;
+}
+
+.ue-category {
+  display: inline-flex;
+  font-size: 0.7rem;
+  padding: 4px 8px;
+  background: rgba(59, 130, 246, 0.16);
+  color: #93c5fd;
+  border-radius: 20px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.ue-desc {
+  font-size: 0.85rem;
+  color: #94a3b8;
+  margin: 0 0 16px 0;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  line-height: 1.5;
+}
+
+.ue-details {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 20px;
+  font-size: 0.8rem;
+  color: #64748b;
+  font-weight: 500;
+}
+
+.ue-detail-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.ue-actions {
+  margin-top: auto;
+  padding-top: 16px;
+  border-top: 1px solid rgba(148, 163, 184, 0.18);
+  text-align: right;
+}
+
+.ue-link {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #93c5fd;
+  text-decoration: none;
+  transition: all 0.2s;
+}
+
+.ue-link:hover {
+  text-decoration: underline;
+  color: #dbeafe;
+}
+
+.ue-empty {
+  margin: 0;
+  color: #94a3b8;
+  border: 1px dashed rgba(148, 163, 184, 0.35);
+  border-radius: 12px;
+  padding: 16px;
+  background: rgba(15, 23, 42, 0.4);
+}
+
+/* Responsive */
+@media (max-width: 640px) {
+  .ue-card {
+    flex-direction: column;
+  }
+  .ue-date-box {
+    flex-direction: row;
+    gap: 8px;
+    padding: 12px;
+    border-right: none;
+    border-bottom: 1px solid rgba(0,0,0,0.05);
+  }
+  .ue-day {
+    font-size: 1.4rem;
+  }
+  .ue-month {
+    margin-top: 0;
+  }
+}
+

@@ -1,0 +1,22 @@
+/* src/index.css */
+:root {
+  --bg-color: #0f172a;
+  --card-color: #1e293b;
+  --primary-color: #38bdf8;
+  --text-main: #f8fafc;
+  --text-secondary: #94a3b8;
+  --border-color: #334155;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  background-color: var(--bg-color);
+  color: var(--text-main);
+  font-family: 'Inter', sans-serif;
+}
+
+a {
+  text-decoration: none;
+  color: inherit;
+}
