@@ -123,7 +123,7 @@ function UpcomingEventsDetails() {
               <button type="button" className="btn btn-outline" onClick={() => setShowRegisterInfo(false)}>
                 Kapat
               </button>
-              <button type="button" className="btn-record" onClick={() => navigate('/#duyurular')}>
+              <button type="button" className="btn-record" onClick={() => navigate('/duyurular')}>
                 Duyurulara Git
               </button>
             </div>

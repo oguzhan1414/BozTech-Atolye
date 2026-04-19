@@ -12,9 +12,14 @@ function UpcomingEvents({ events = [] }) {
             <FiCalendar size={24} />
             <h2>Gelecek Etkinlikler</h2>
           </div>
-          <span className="section-meta-pill">
-            Yaklasan {events.length} etkinlik
-          </span>
+          <div className="section-header-actions">
+            <span className="section-meta-pill">
+              Yaklasan {events.length} etkinlik
+            </span>
+            <Link to="/etkinlikler" className="section-view-link">
+              Tümünü Görüntüle
+            </Link>
+          </div>
         </div>
 
         <div className="ue-grid">

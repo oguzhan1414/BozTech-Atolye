@@ -2,29 +2,44 @@ const Photo = require('../models/Photo');
 const fs = require('fs');
 const path = require('path');
 const { validationResult } = require('express-validator');
+const { buildUploadUrl, resolveUploadUrl } = require('../utils/publicAssetUrl');
+
+const serializePhoto = (req, photo) => {
+  const plainPhoto = photo.toObject ? photo.toObject() : photo;
+  return {
+    ...plainPhoto,
+    imageUrl: resolveUploadUrl(req, plainPhoto.imageUrl, plainPhoto.imageKey, 'photos')
+  };
+};
 
 // @desc    Tüm fotoğrafları getir
 // @route   GET /api/photos
 // @access  Public
 const getPhotos = async (req, res) => {
   try {
-    const { category, eventId, tag, limit = 50 } = req.query;
+    const { category, eventId, tag, limit } = req.query;
     
     let filter = { isActive: true };
     if (category) filter.category = category;
     if (eventId) filter.eventId = eventId;
     if (tag) filter.tags = tag;
 
-    const photos = await Photo.find(filter)
+    let photoQuery = Photo.find(filter)
       .sort({ createdAt: -1 })
-      .limit(parseInt(limit))
       .populate('uploadedBy', 'name')
       .populate('eventId', 'title');
+
+    const parsedLimit = parseInt(limit, 10);
+    if (!Number.isNaN(parsedLimit) && parsedLimit > 0) {
+      photoQuery = photoQuery.limit(parsedLimit);
+    }
+
+    const photos = await photoQuery;
 
     res.json({
       success: true,
       count: photos.length,
-      data: photos
+      data: photos.map((photo) => serializePhoto(req, photo))
     });
   } catch (error) {
     console.error('Fotoğraflar getirilirken hata:', error);
@@ -53,7 +68,7 @@ const getPhotoById = async (req, res) => {
 
     res.json({
       success: true,
-      data: photo
+      data: serializePhoto(req, photo)
     });
   } catch (error) {
     console.error('Fotoğraf getirilirken hata:', error);
@@ -89,8 +104,7 @@ const uploadPhoto = async (req, res) => {
     const { title, description, category, tags, eventId } = req.body;
 
     // URL oluştur
-    const baseUrl = `${req.protocol}://${req.get('host')}`;
-    const imageUrl = `${baseUrl}/uploads/photos/${req.file.filename}`;
+    const imageUrl = buildUploadUrl(req, req.file.filename, 'photos');
 
     const photo = await Photo.create({
       title,
@@ -108,7 +122,7 @@ const uploadPhoto = async (req, res) => {
     res.status(201).json({
       success: true,
       message: 'Fotoğraf başarıyla yüklendi',
-      data: photo
+      data: serializePhoto(req, photo)
     });
 
   } catch (error) {
@@ -167,7 +181,7 @@ const updatePhoto = async (req, res) => {
     res.json({
       success: true,
       message: 'Fotoğraf güncellendi',
-      data: photo
+      data: serializePhoto(req, photo)
     });
 
   } catch (error) {
@@ -245,7 +259,7 @@ const getAllPhotosAdmin = async (req, res) => {
       success: true,
       stats,
       count: photos.length,
-      data: photos
+      data: photos.map((photo) => serializePhoto(req, photo))
     });
 
   } catch (error) {
@@ -277,9 +291,14 @@ const getPhotosByCategory = async (req, res) => {
       { $sort: { category: 1 } }
     ]);
 
+    const normalizedCategories = categories.map((category) => ({
+      ...category,
+      photos: (category.photos || []).map((photo) => serializePhoto(req, photo))
+    }));
+
     res.json({
       success: true,
-      data: categories
+      data: normalizedCategories
     });
 
   } catch (error) {

@@ -9,6 +9,10 @@ import ApplicationPage from './pages/Basvuru';
 import ProjectDetail from './pages/ProjectDetail';
 import UpcomingEventsDetails from './pages/UpcomingEventsDetails';
 import DuyuruDetail from './pages/DuyuruDetail';
+import AnnouncementsPage from './pages/AnnouncementsPage';
+import EventsPage from './pages/EventsPage';
+import PhotoGalleryPage from './pages/PhotoGalleryPage';
+import ProjectsPage from './pages/ProjectsPage';
 
 // Admin Importları
 import AdminLoginPage from './pages/AdminLoginPage';
@@ -42,6 +46,10 @@ function App() {
           <Route path="/club-info" element={<ClubInfoPage />} />
           <Route path="/contact" element={<ContactPage />} />
           <Route path="/apply" element={<ApplicationPage />} />
+          <Route path="/duyurular" element={<AnnouncementsPage />} />
+          <Route path="/etkinlikler" element={<EventsPage />} />
+          <Route path="/galeri" element={<PhotoGalleryPage />} />
+          <Route path="/projeler" element={<ProjectsPage />} />
           <Route path="/projeler/:projectId" element={<ProjectDetail />} />
           <Route path="/etkinlik/:eventsId" element={<UpcomingEventsDetails />} />
           <Route path="/duyuru/:duyuruId" element={<DuyuruDetail />} />

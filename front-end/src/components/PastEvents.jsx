@@ -8,7 +8,12 @@ function PastEvents({ events = [] }) {
     <div className="past-events-widget">
       <div className="widget-header">
         <h3 className="widget-title">Geçmiş Etkinlikler</h3>
-        <span className="widget-note">Arsivden son kayitlar</span>
+        <div className="section-header-actions">
+          <span className="widget-note">Arsivden son kayitlar</span>
+          <Link to="/etkinlikler" className="section-view-link">
+            Tümünü Görüntüle
+          </Link>
+        </div>
       </div>
       
       <div className="past-events-container">

@@ -21,6 +21,9 @@ const boardMemberRoutes = require('./src/routes/boardMemberRoutes');
 
 const app = express();
 
+// Railway gibi reverse proxy ortamlarinda protocol/host dogru okunur.
+app.set('trust proxy', 1);
+
 const normalizeOrigin = (value) => {
   const trimmed = (value || '').trim();
   if (!trimmed) return '';

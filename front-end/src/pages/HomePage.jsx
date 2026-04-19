@@ -4,15 +4,18 @@ import Announcements from '../components/Announcements';
 import UpcomingEvents from '../components/UpcomingEvents';
 import PastEvents from '../components/PastEvents';
 import PhotoGallery from '../components/PhotoGallery';
+import HomeProjects from '../components/HomeProjects';
 import { announcementService } from '../services/announcementService';
 import { eventService } from '../services/eventService';
 import { photoService } from '../services/photoService';
+import { projectService } from '../services/projectService';
 
 function HomePage() {
   const [announcements, setAnnouncements] = useState([]);
   const [upcomingEvents, setUpcomingEvents] = useState([]);
   const [pastEvents, setPastEvents] = useState([]);
   const [photos, setPhotos] = useState([]);
+  const [projects, setProjects] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -24,17 +27,19 @@ function HomePage() {
       setLoading(true);
       
       // Tüm verileri paralel olarak çek
-      const [announcementsRes, upcomingRes, pastRes, photosRes] = await Promise.all([
+      const [announcementsRes, upcomingRes, pastRes, photosRes, projectsRes] = await Promise.all([
         announcementService.getAll(),
         eventService.getAll({ type: 'upcoming' }),
         eventService.getAll({ type: 'past' }),
-        photoService.getAll({ limit: 8 })
+        photoService.getAll({ limit: 8 }),
+        projectService.getAll()
       ]);
 
       setAnnouncements(announcementsRes.data || []);
       setUpcomingEvents(upcomingRes.data || []);
       setPastEvents(pastRes.data || []);
       setPhotos(photosRes.data || []);
+      setProjects(projectsRes.data || []);
       
     } catch (error) {
       console.error('Veriler yüklenirken hata:', error);
@@ -70,6 +75,7 @@ function HomePage() {
       {/* Verileri prop olarak component'lere gönder */}
       <Announcements announcements={announcements} />
       <UpcomingEvents events={upcomingEvents} />
+      <HomeProjects projects={projects} />
       
       <div className="section home-stage-section">
         <div className="container">

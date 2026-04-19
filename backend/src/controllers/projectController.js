@@ -1,11 +1,19 @@
 const Project = require('../models/Project');
+const { buildUploadUrl, resolveUploadUrl } = require('../utils/publicAssetUrl');
+
+const serializeProject = (req, project) => {
+  const plainProject = project.toObject ? project.toObject() : project;
+  return {
+    ...plainProject,
+    img: resolveUploadUrl(req, plainProject.img, null, 'photos')
+  };
+};
 
 exports.createProject = async (req, res) => {
   try {
     let imgPath = req.body.img || '';
     if (req.file) {
-      const baseUrl = `${req.protocol}://${req.get('host')}`;
-      imgPath = `${baseUrl}/uploads/photos/${req.file.filename}`;
+      imgPath = buildUploadUrl(req, req.file.filename, 'photos');
     }
     
     if (!imgPath) {
@@ -24,7 +32,7 @@ exports.createProject = async (req, res) => {
       img: imgPath,
       createdBy: req.user.id 
     });
-    res.status(201).json({ success: true, data: project });
+    res.status(201).json({ success: true, data: serializeProject(req, project) });
   } catch (err) {
     res.status(400).json({ success: false, message: err.message });
   }
@@ -33,7 +41,11 @@ exports.createProject = async (req, res) => {
 exports.getProjects = async (req, res) => {
   try {
     const projects = await Project.find().sort('-createdAt');
-    res.status(200).json({ success: true, count: projects.length, data: projects });
+    res.status(200).json({
+      success: true,
+      count: projects.length,
+      data: projects.map((project) => serializeProject(req, project))
+    });
   } catch (err) {
     res.status(500).json({ success: false, message: 'Projeler getirilemedi' });
   }
@@ -45,7 +57,7 @@ exports.getProjectById = async (req, res) => {
     if (!project) {
       return res.status(404).json({ success: false, message: 'Proje bulunamadı' });
     }
-    res.status(200).json({ success: true, data: project });
+    res.status(200).json({ success: true, data: serializeProject(req, project) });
   } catch (err) {
     res.status(500).json({ success: false, message: 'Proje getirilemedi' });
   }
@@ -55,8 +67,7 @@ exports.updateProject = async (req, res) => {
   try {
     let updateData = { ...req.body };
     if (req.file) {
-      const baseUrl = `${req.protocol}://${req.get('host')}`;
-      updateData.img = `${baseUrl}/uploads/photos/${req.file.filename}`;
+      updateData.img = buildUploadUrl(req, req.file.filename, 'photos');
     }
 
     if (updateData.tech) {
@@ -72,7 +83,7 @@ exports.updateProject = async (req, res) => {
     if (!project) {
       return res.status(404).json({ success: false, message: 'Proje bulunamadı' });
     }
-    res.status(200).json({ success: true, data: project });
+    res.status(200).json({ success: true, data: serializeProject(req, project) });
   } catch (err) {
     res.status(400).json({ success: false, message: err.message });
   }

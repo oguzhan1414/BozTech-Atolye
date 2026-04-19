@@ -11,9 +11,14 @@ function Announcements({ announcements = [] }) {
             <FiBell size={24} />
             <h2>Duyurular</h2>
           </div>
-          <span className="section-meta-pill">
-            Son {announcements.length} duyuru
-          </span>
+          <div className="section-header-actions">
+            <span className="section-meta-pill">
+              Son {announcements.length} duyuru
+            </span>
+            <Link to="/duyurular" className="section-view-link">
+              Tümünü Görüntüle
+            </Link>
+          </div>
         </div>
 
         <div className="announcements-grid">

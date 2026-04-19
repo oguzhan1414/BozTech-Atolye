@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { FiImage, FiChevronLeft, FiChevronRight } from 'react-icons/fi';
+import { Link } from 'react-router-dom';
 import '../styles/PhotoGallerySlider.css';
 
 function PhotoGallery({ photos = [] }) {
@@ -52,7 +53,12 @@ function PhotoGallery({ photos = [] }) {
     <div className="photo-gallery-slider">
       <div className="gallery-header">
         <h3>Fotoğraf Galerisi</h3>
-        <span className="gallery-counter">{currentIndex + 1} / {photos.length}</span>
+        <div className="section-header-actions">
+          <span className="gallery-counter">{currentIndex + 1} / {photos.length}</span>
+          <Link to="/galeri" className="section-view-link">
+            Tümünü Görüntüle
+          </Link>
+        </div>
       </div>
 
       <div className="slider-main">
