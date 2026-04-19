@@ -16,7 +16,7 @@ import {
   FiSearch,
   FiChevronDown
 } from 'react-icons/fi';
-import '../../styles/Admin.css';
+import '../../styles/admin.css';
 
 function AdminLayout() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
