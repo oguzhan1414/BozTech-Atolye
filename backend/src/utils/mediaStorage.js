@@ -70,6 +70,13 @@ const uploadImage = async (filePath, folder = 'boztech/photos') => {
     uploaded = await cloudinary.uploader.upload(filePath, {
       folder,
       resource_type: 'image',
+      unique_filename: true,
+      overwrite: false,
+      transformation: [
+        { width: 2000, height: 2000, crop: 'limit' },
+        { quality: 'auto:good' },
+        { fetch_format: 'auto' },
+      ],
     });
   } catch (error) {
     throw new Error(`Cloudinary yukleme basarisiz: ${error.message}`);
@@ -90,8 +97,34 @@ const deleteImage = async (publicId) => {
   });
 };
 
+const extractPublicIdFromCloudinaryUrl = (url) => {
+  const source = String(url || '').trim();
+  if (!source.includes('res.cloudinary.com')) return '';
+
+  try {
+    const parsed = new URL(source);
+    const pathParts = parsed.pathname.split('/').filter(Boolean);
+    const uploadIndex = pathParts.findIndex((part) => part === 'upload');
+    if (uploadIndex === -1) return '';
+
+    const publicParts = pathParts.slice(uploadIndex + 1);
+    if (!publicParts.length) return '';
+
+    // Drop optional version segment like v1712345678
+    if (/^v\d+$/.test(publicParts[0])) {
+      publicParts.shift();
+    }
+
+    const publicPath = publicParts.join('/');
+    return publicPath.replace(/\.[a-zA-Z0-9]+$/, '');
+  } catch (error) {
+    return '';
+  }
+};
+
 module.exports = {
   isCloudinaryEnabled,
   uploadImage,
   deleteImage,
+  extractPublicIdFromCloudinaryUrl,
 };

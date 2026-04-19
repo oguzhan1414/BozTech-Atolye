@@ -1,7 +1,12 @@
 const Project = require('../models/Project');
 const fs = require('fs');
 const { buildUploadUrl, resolveUploadUrl } = require('../utils/publicAssetUrl');
-const { isCloudinaryEnabled, uploadImage } = require('../utils/mediaStorage');
+const {
+  isCloudinaryEnabled,
+  uploadImage,
+  deleteImage,
+  extractPublicIdFromCloudinaryUrl,
+} = require('../utils/mediaStorage');
 
 const safeDeleteLocalFile = (filePath) => {
   if (!filePath) return;
@@ -25,13 +30,17 @@ const serializeProject = (req, project) => {
 exports.createProject = async (req, res) => {
   try {
     let imgPath = req.body.img || '';
+    let imgKey = req.body.imgKey || '';
+
     if (req.file) {
       if (isCloudinaryEnabled()) {
         const uploaded = await uploadImage(req.file.path, 'boztech/projects');
         imgPath = uploaded.url;
+        imgKey = uploaded.key;
         safeDeleteLocalFile(req.file.path);
       } else {
         imgPath = buildUploadUrl(req, req.file.filename, 'photos');
+        imgKey = req.file.filename;
       }
     }
     
@@ -49,6 +58,7 @@ exports.createProject = async (req, res) => {
       ...req.body, 
       tech: techArray,
       img: imgPath,
+      imgKey,
       createdBy: req.user.id 
     });
     res.status(201).json({ success: true, data: serializeProject(req, project) });
@@ -85,14 +95,21 @@ exports.getProjectById = async (req, res) => {
 
 exports.updateProject = async (req, res) => {
   try {
+    const existingProject = await Project.findById(req.params.id);
+    if (!existingProject) {
+      return res.status(404).json({ success: false, message: 'Proje bulunamadı' });
+    }
+
     let updateData = { ...req.body };
     if (req.file) {
       if (isCloudinaryEnabled()) {
         const uploaded = await uploadImage(req.file.path, 'boztech/projects');
         updateData.img = uploaded.url;
+        updateData.imgKey = uploaded.key;
         safeDeleteLocalFile(req.file.path);
       } else {
         updateData.img = buildUploadUrl(req, req.file.filename, 'photos');
+        updateData.imgKey = req.file.filename;
       }
     }
 
@@ -106,9 +123,14 @@ exports.updateProject = async (req, res) => {
       new: true, 
       runValidators: true 
     });
-    if (!project) {
-      return res.status(404).json({ success: false, message: 'Proje bulunamadı' });
+
+    if (req.file && isCloudinaryEnabled()) {
+      const oldKey = existingProject.imgKey || extractPublicIdFromCloudinaryUrl(existingProject.img);
+      if (oldKey && oldKey !== project.imgKey) {
+        await deleteImage(oldKey);
+      }
     }
+
     res.status(200).json({ success: true, data: serializeProject(req, project) });
   } catch (err) {
     if (req.file) safeDeleteLocalFile(req.file.path);
@@ -118,10 +140,20 @@ exports.updateProject = async (req, res) => {
 
 exports.deleteProject = async (req, res) => {
   try {
-    const project = await Project.findByIdAndDelete(req.params.id);
+    const project = await Project.findById(req.params.id);
     if (!project) {
       return res.status(404).json({ success: false, message: 'Proje bulunamadı' });
     }
+
+    if (isCloudinaryEnabled()) {
+      const key = project.imgKey || extractPublicIdFromCloudinaryUrl(project.img);
+      if (key) {
+        await deleteImage(key);
+      }
+    }
+
+    await Project.findByIdAndDelete(req.params.id);
+
     res.status(200).json({ success: true, data: {} });
   } catch (err) {
     res.status(500).json({ success: false, message: 'Silinemedi' });

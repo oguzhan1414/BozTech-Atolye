@@ -5,6 +5,7 @@ const projectSchema = new mongoose.Schema({
   desc: { type: String, required: [true, 'Kısa açıklama zorunludur'] },
   longDesc: { type: String, required: [true, 'Uzun açıklama (detay) zorunludur'] },
   img: { type: String, required: [true, 'Görsel URL veya yolu zorunludur'] },
+  imgKey: { type: String, default: '' },
   tag: { type: String, required: [true, 'Kategori (Tag) alanı zorunludur'] },
   tech: [{ type: String }],
   createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }
