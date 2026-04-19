@@ -9,6 +9,8 @@ backend/.env
 backend/.env.*
 front-end/.env
 front-end/.env.*
+!backend/.env.example
+!front-end/.env.example
 
 # Runtime uploads
 backend/uploads/photos/

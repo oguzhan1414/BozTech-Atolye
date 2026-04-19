@@ -21,14 +21,36 @@ const boardMemberRoutes = require('./src/routes/boardMemberRoutes');
 
 const app = express();
 
+const defaultAllowedOrigins = ['http://localhost:5173', 'http://localhost:3000'];
+const envAllowedOrigins = [
+  process.env.FRONTEND_URL,
+  ...(process.env.FRONTEND_URLS || '').split(',')
+]
+  .map((origin) => (origin || '').trim())
+  .filter(Boolean);
+
+const allowedOrigins = [...new Set([...defaultAllowedOrigins, ...envAllowedOrigins])];
+
+const corsOptions = {
+  origin: (origin, callback) => {
+    // Browser olmayan isteklerde origin gelmeyebilir (health check, curl vb.)
+    if (!origin) return callback(null, true);
+
+    if (allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    }
+
+    return callback(new Error(`CORS izin hatasi: ${origin}`));
+  },
+  credentials: true,
+  optionsSuccessStatus: 200,
+};
+
 // Middleware
 app.use(helmet({
   crossOriginResourcePolicy: { policy: "cross-origin" }
 }));
-app.use(cors({
-  origin: ['http://localhost:5173', 'http://localhost:3000'],
-  credentials: true
-}));
+app.use(cors(corsOptions));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(morgan('dev'));
@@ -38,6 +60,12 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // Database connection
 const mongoUri = process.env.MONGODB_URI;
+
+if (!mongoUri) {
+  console.error('❌ MONGODB_URI bulunamadı. Railway Variables alanına ekleyin.');
+  process.exit(1);
+}
+
 const isAtlasSrv = typeof mongoUri === 'string' && mongoUri.startsWith('mongodb+srv://');
 
 if (isAtlasSrv) {
@@ -65,6 +93,11 @@ mongoose.connect(mongoUri)
 // İlk admin kullanıcısını oluştur
 const createInitialAdmin = async () => {
   try {
+    if (!process.env.ADMIN_EMAIL || !process.env.ADMIN_PASSWORD) {
+      console.warn('⚠️ ADMIN_EMAIL veya ADMIN_PASSWORD tanimli degil, ilk admin olusturma atlandi.');
+      return;
+    }
+
     const User = require('./src/models/User');
     const adminExists = await User.findOne({ role: 'admin' });
     
@@ -106,6 +139,15 @@ app.get('/', (req, res) => {
   res.json({ 
     message: 'Tech Club API çalışıyor',
     status: 'Auth sistemi aktif, diğerleri beklemede'
+  });
+});
+
+// Railway health check
+app.get('/health', (req, res) => {
+  res.status(200).json({
+    status: 'ok',
+    uptime: Math.round(process.uptime()),
+    timestamp: new Date().toISOString(),
   });
 });
 
