@@ -1,5 +1,18 @@
 const Project = require('../models/Project');
+const fs = require('fs');
 const { buildUploadUrl, resolveUploadUrl } = require('../utils/publicAssetUrl');
+const { isCloudinaryEnabled, uploadImage } = require('../utils/mediaStorage');
+
+const safeDeleteLocalFile = (filePath) => {
+  if (!filePath) return;
+  try {
+    if (fs.existsSync(filePath)) {
+      fs.unlinkSync(filePath);
+    }
+  } catch (error) {
+    console.warn('Yerel dosya silinemedi:', filePath, error.message);
+  }
+};
 
 const serializeProject = (req, project) => {
   const plainProject = project.toObject ? project.toObject() : project;
@@ -13,7 +26,13 @@ exports.createProject = async (req, res) => {
   try {
     let imgPath = req.body.img || '';
     if (req.file) {
-      imgPath = buildUploadUrl(req, req.file.filename, 'photos');
+      if (isCloudinaryEnabled()) {
+        const uploaded = await uploadImage(req.file.path, 'boztech/projects');
+        imgPath = uploaded.url;
+        safeDeleteLocalFile(req.file.path);
+      } else {
+        imgPath = buildUploadUrl(req, req.file.filename, 'photos');
+      }
     }
     
     if (!imgPath) {
@@ -34,6 +53,7 @@ exports.createProject = async (req, res) => {
     });
     res.status(201).json({ success: true, data: serializeProject(req, project) });
   } catch (err) {
+    if (req.file) safeDeleteLocalFile(req.file.path);
     res.status(400).json({ success: false, message: err.message });
   }
 };
@@ -67,7 +87,13 @@ exports.updateProject = async (req, res) => {
   try {
     let updateData = { ...req.body };
     if (req.file) {
-      updateData.img = buildUploadUrl(req, req.file.filename, 'photos');
+      if (isCloudinaryEnabled()) {
+        const uploaded = await uploadImage(req.file.path, 'boztech/projects');
+        updateData.img = uploaded.url;
+        safeDeleteLocalFile(req.file.path);
+      } else {
+        updateData.img = buildUploadUrl(req, req.file.filename, 'photos');
+      }
     }
 
     if (updateData.tech) {
@@ -85,6 +111,7 @@ exports.updateProject = async (req, res) => {
     }
     res.status(200).json({ success: true, data: serializeProject(req, project) });
   } catch (err) {
+    if (req.file) safeDeleteLocalFile(req.file.path);
     res.status(400).json({ success: false, message: err.message });
   }
 };

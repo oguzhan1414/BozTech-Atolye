@@ -15,14 +15,19 @@ const buildUploadUrl = (req, filename, folder = 'photos') => {
 };
 
 const resolveUploadUrl = (req, rawUrl, filename, folder = 'photos') => {
+  const source = String(rawUrl || '').trim();
+
   if (filename) {
+    // If a remote absolute URL exists and it is not an uploads path, preserve it.
+    if (/^https?:\/\//i.test(source) && !source.includes('/uploads/')) {
+      return source;
+    }
     return buildUploadUrl(req, filename, folder);
   }
 
-  if (!rawUrl) return '';
+  if (!source) return '';
 
   const origin = getRequestOrigin(req);
-  const source = String(rawUrl).trim();
 
   if (source.startsWith('/uploads/')) {
     return `${origin}${source}`;

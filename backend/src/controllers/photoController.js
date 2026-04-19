@@ -3,6 +3,18 @@ const fs = require('fs');
 const path = require('path');
 const { validationResult } = require('express-validator');
 const { buildUploadUrl, resolveUploadUrl } = require('../utils/publicAssetUrl');
+const { isCloudinaryEnabled, uploadImage, deleteImage } = require('../utils/mediaStorage');
+
+const safeDeleteLocalFile = (filePath) => {
+  if (!filePath) return;
+  try {
+    if (fs.existsSync(filePath)) {
+      fs.unlinkSync(filePath);
+    }
+  } catch (error) {
+    console.warn('Yerel dosya silinemedi:', filePath, error.message);
+  }
+};
 
 const serializePhoto = (req, photo) => {
   const plainPhoto = photo.toObject ? photo.toObject() : photo;
@@ -94,7 +106,7 @@ const uploadPhoto = async (req, res) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
       // Yüklenen dosyayı sil
-      fs.unlinkSync(req.file.path);
+      safeDeleteLocalFile(req.file.path);
       return res.status(400).json({
         success: false,
         errors: errors.array()
@@ -103,16 +115,27 @@ const uploadPhoto = async (req, res) => {
 
     const { title, description, category, tags, eventId } = req.body;
 
-    // URL oluştur
-    const imageUrl = buildUploadUrl(req, req.file.filename, 'photos');
+    let imageUrl = buildUploadUrl(req, req.file.filename, 'photos');
+    let imageKey = req.file.filename;
+    let imageSize = req.file.size;
+
+    if (isCloudinaryEnabled()) {
+      const uploaded = await uploadImage(req.file.path, 'boztech/photos');
+      imageUrl = uploaded.url;
+      imageKey = uploaded.key;
+      imageSize = uploaded.bytes || req.file.size;
+
+      // Cloudinary'ye yuklenen dosyanin lokal temp kopyasini temizle.
+      safeDeleteLocalFile(req.file.path);
+    }
 
     const photo = await Photo.create({
       title,
       description,
       category,
       imageUrl,
-      imageKey: req.file.filename,
-      imageSize: req.file.size,
+      imageKey,
+      imageSize,
       mimeType: req.file.mimetype,
       tags: tags ? tags.split(',').map(tag => tag.trim()) : [],
       eventId: eventId || null,
@@ -128,7 +151,7 @@ const uploadPhoto = async (req, res) => {
   } catch (error) {
     // Hata olursa yüklenen dosyayı sil
     if (req.file) {
-      fs.unlinkSync(req.file.path);
+      safeDeleteLocalFile(req.file.path);
     }
     console.error('Fotoğraf yüklenirken hata:', error);
     res.status(500).json({
@@ -215,9 +238,13 @@ const deletePhoto = async (req, res) => {
       });
     }
 
-    const filePath = path.join(__dirname, '../../uploads/photos/', photo.imageKey);
-    if (fs.existsSync(filePath)) {
-      fs.unlinkSync(filePath);
+    const isCloudImage = typeof photo.imageUrl === 'string' && photo.imageUrl.includes('res.cloudinary.com');
+
+    if (isCloudImage && isCloudinaryEnabled()) {
+      await deleteImage(photo.imageKey);
+    } else {
+      const filePath = path.join(__dirname, '../../uploads/photos/', photo.imageKey);
+      safeDeleteLocalFile(filePath);
     }
 
     await Photo.findByIdAndDelete(req.params.id);
