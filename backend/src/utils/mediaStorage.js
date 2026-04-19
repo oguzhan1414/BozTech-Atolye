@@ -1,7 +1,21 @@
 const cloudinary = require('cloudinary').v2;
 
+const normalizeEnvValue = (value) => {
+  const text = String(value || '').trim();
+  if (!text) return '';
+
+  // Remove accidental surrounding quotes/backticks copied from docs or .env snippets.
+  if ((text.startsWith('"') && text.endsWith('"'))
+    || (text.startsWith("'") && text.endsWith("'"))
+    || (text.startsWith('`') && text.endsWith('`'))) {
+    return text.slice(1, -1).trim();
+  }
+
+  return text;
+};
+
 const parseCloudinaryUrl = () => {
-  const rawUrl = String(process.env.CLOUDINARY_URL || '').trim();
+  const rawUrl = normalizeEnvValue(process.env.CLOUDINARY_URL);
   if (!rawUrl) return null;
 
   try {
@@ -23,9 +37,9 @@ const parseCloudinaryUrl = () => {
 };
 
 const readCloudinaryCredentials = () => {
-  const cloud_name = String(process.env.CLOUDINARY_CLOUD_NAME || '').trim();
-  const api_key = String(process.env.CLOUDINARY_API_KEY || '').trim();
-  const api_secret = String(process.env.CLOUDINARY_API_SECRET || '').trim();
+  const cloud_name = normalizeEnvValue(process.env.CLOUDINARY_CLOUD_NAME);
+  const api_key = normalizeEnvValue(process.env.CLOUDINARY_API_KEY);
+  const api_secret = normalizeEnvValue(process.env.CLOUDINARY_API_SECRET);
 
   if (cloud_name && api_key && api_secret) {
     return { cloud_name, api_key, api_secret };
