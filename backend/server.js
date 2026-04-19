@@ -21,22 +21,42 @@ const boardMemberRoutes = require('./src/routes/boardMemberRoutes');
 
 const app = express();
 
+const normalizeOrigin = (value) => {
+  const trimmed = (value || '').trim();
+  if (!trimmed) return '';
+
+  const withProtocol = /^https?:\/\//i.test(trimmed)
+    ? trimmed
+    : `https://${trimmed}`;
+
+  return withProtocol.replace(/\/+$/, '').toLowerCase();
+};
+
 const defaultAllowedOrigins = ['http://localhost:5173', 'http://localhost:3000'];
 const envAllowedOrigins = [
   process.env.FRONTEND_URL,
   ...(process.env.FRONTEND_URLS || '').split(',')
 ]
-  .map((origin) => (origin || '').trim())
+  .map((origin) => normalizeOrigin(origin))
   .filter(Boolean);
 
-const allowedOrigins = [...new Set([...defaultAllowedOrigins, ...envAllowedOrigins])];
+const allowedOrigins = [
+  ...new Set([
+    ...defaultAllowedOrigins.map((origin) => normalizeOrigin(origin)),
+    ...envAllowedOrigins,
+  ])
+];
+
+console.log(`🌍 CORS izinli originler: ${allowedOrigins.join(', ')}`);
 
 const corsOptions = {
   origin: (origin, callback) => {
     // Browser olmayan isteklerde origin gelmeyebilir (health check, curl vb.)
     if (!origin) return callback(null, true);
 
-    if (allowedOrigins.includes(origin)) {
+    const normalizedOrigin = normalizeOrigin(origin);
+
+    if (allowedOrigins.includes(normalizedOrigin)) {
       return callback(null, true);
     }
 
