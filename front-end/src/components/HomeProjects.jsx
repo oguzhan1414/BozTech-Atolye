@@ -32,7 +32,8 @@ function HomeProjects({ projects = [] }) {
                     src={project.img}
                     alt={project.title}
                     onError={(event) => {
-                      event.currentTarget.src = 'https://via.placeholder.com/640x360?text=Proje+Gorseli';
+                      event.currentTarget.onerror = null;
+                      event.currentTarget.src = '/placeholders/project-fallback.svg';
                     }}
                   />
                 </div>

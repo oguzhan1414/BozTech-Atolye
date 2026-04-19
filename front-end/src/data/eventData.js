@@ -141,14 +141,14 @@ export const BOARD_MEMBERS = [
   { 
     name: "Oğuzhan Şekerci", 
     role: "Kulüp Başkanı", 
-    img: "https://via.placeholder.com/150", 
+    img: "/placeholders/image-fallback.svg", 
     linkedin: "#", 
     github: "#" 
   },
   { 
     name: "Ahmet Yılmaz", 
     role: "Teknik Sorumlu", 
-    img: "https://via.placeholder.com/150", 
+    img: "/placeholders/image-fallback.svg", 
     linkedin: "#", 
     github: "#" 
   }

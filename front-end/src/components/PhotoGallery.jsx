@@ -73,7 +73,8 @@ function PhotoGallery({ photos = [] }) {
           src={currentPhoto.imageUrl}
           alt={currentPhoto.title || 'Galeri gorseli'}
           onError={(e) => {
-            e.currentTarget.src = 'https://via.placeholder.com/1200x800?text=Gorsel+Yuklenemedi';
+            e.currentTarget.onerror = null;
+            e.currentTarget.src = '/placeholders/image-fallback.svg';
           }}
         />
 

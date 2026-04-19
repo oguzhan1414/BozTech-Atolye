@@ -50,7 +50,8 @@ function PhotoGalleryPage() {
                   src={photo.imageUrl}
                   alt={photo.title || 'Galeri gorseli'}
                   onError={(event) => {
-                    event.currentTarget.src = 'https://via.placeholder.com/640x420?text=Gorsel+Yok';
+                    event.currentTarget.onerror = null;
+                    event.currentTarget.src = '/placeholders/image-fallback.svg';
                   }}
                 />
                 <div className="photo-archive-body">

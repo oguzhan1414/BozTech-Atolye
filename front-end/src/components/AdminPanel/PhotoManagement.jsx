@@ -180,7 +180,8 @@ function PhotoManagement() {
                   src={photo.imageUrl} 
                   alt={photo.title}
                   onError={(e) => {
-                    e.target.src = 'https://via.placeholder.com/300x200?text=Resim+Yok';
+                    e.target.onerror = null;
+                    e.target.src = '/placeholders/image-fallback.svg';
                   }}
                 />
                 <div className="photo-actions">

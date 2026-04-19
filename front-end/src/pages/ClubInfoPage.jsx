@@ -219,10 +219,11 @@ function ClubInfoPage() {
                   {members.map((member) => (
                     <article key={member._id} className="club-member-card">
                       <img
-                        src={member.img || 'https://via.placeholder.com/160'}
+                        src={member.img || '/placeholders/avatar-fallback.svg'}
                         alt={member.name}
                         onError={(event) => {
-                          event.currentTarget.src = 'https://via.placeholder.com/160';
+                          event.currentTarget.onerror = null;
+                          event.currentTarget.src = '/placeholders/avatar-fallback.svg';
                         }}
                       />
                       <h4>{member.name}</h4>
