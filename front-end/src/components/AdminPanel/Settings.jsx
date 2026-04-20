@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FiSave, FiSettings, FiUser, FiShield, FiLogOut } from 'react-icons/fi';
+import { FiSave, FiSettings, FiUser, FiShield, FiLogOut, FiLock } from 'react-icons/fi';
+import { authService } from '../../services/authService';
 import UnsavedChangesModal from './UnsavedChangesModal';
 import { useUnsavedChangesPrompt } from '../../hooks/useUnsavedChangesPrompt';
 
@@ -9,9 +10,23 @@ function Settings() {
   const [activeTab, setActiveTab] = useState('profile');
   const [savedName, setSavedName] = useState(localStorage.getItem('userName') || 'Yonetici');
   const [profileName, setProfileName] = useState(savedName);
+  const [passwordForm, setPasswordForm] = useState({
+    currentPassword: '',
+    newPassword: '',
+    confirmPassword: '',
+  });
+  const [changingPassword, setChangingPassword] = useState(false);
   const [feedback, setFeedback] = useState(null);
 
-  const isDirty = useMemo(() => profileName.trim() !== savedName.trim(), [profileName, savedName]);
+  const profileDirty = useMemo(() => profileName.trim() !== savedName.trim(), [profileName, savedName]);
+  const passwordDirty = useMemo(() => {
+    return Boolean(
+      passwordForm.currentPassword
+      || passwordForm.newPassword
+      || passwordForm.confirmPassword
+    );
+  }, [passwordForm]);
+  const isDirty = profileDirty || passwordDirty;
   const {
     isWarningOpen,
     message,
@@ -22,6 +37,7 @@ function Settings() {
 
   const roleLabel = localStorage.getItem('userRole') === 'admin' ? 'Super Admin' : 'Editor';
   const hasActiveSession = Boolean(localStorage.getItem('token'));
+  const mustChangePassword = localStorage.getItem('userMustChangePassword') === 'true';
 
   const handleTabChange = (nextTab) => {
     if (nextTab === activeTab) return;
@@ -41,8 +57,50 @@ function Settings() {
     }));
   };
 
+  const handlePasswordFieldChange = (field, value) => {
+    setPasswordForm((prev) => ({ ...prev, [field]: value }));
+    setFeedback(null);
+  };
+
+  const handleChangePassword = async (event) => {
+    event.preventDefault();
+
+    if (!passwordForm.currentPassword || !passwordForm.newPassword || !passwordForm.confirmPassword) {
+      setFeedback({ type: 'error', message: 'Tum sifre alanlarini doldurun.' });
+      return;
+    }
+
+    if (passwordForm.newPassword.length < 6) {
+      setFeedback({ type: 'error', message: 'Yeni sifre en az 6 karakter olmali.' });
+      return;
+    }
+
+    if (passwordForm.newPassword !== passwordForm.confirmPassword) {
+      setFeedback({ type: 'error', message: 'Yeni sifreler birbiriyle ayni degil.' });
+      return;
+    }
+
+    if (passwordForm.currentPassword === passwordForm.newPassword) {
+      setFeedback({ type: 'error', message: 'Yeni sifre mevcut sifre ile ayni olamaz.' });
+      return;
+    }
+
+    try {
+      setChangingPassword(true);
+      await authService.changePassword(passwordForm.currentPassword, passwordForm.newPassword);
+      setPasswordForm({ currentPassword: '', newPassword: '', confirmPassword: '' });
+      localStorage.setItem('userMustChangePassword', 'false');
+      setFeedback({ type: 'success', message: 'Sifreniz basariyla degistirildi.' });
+    } catch (apiError) {
+      setFeedback({ type: 'error', message: apiError?.message || 'Sifre degistirilirken bir hata olustu.' });
+    } finally {
+      setChangingPassword(false);
+    }
+  };
+
   const handleLogout = () => {
     localStorage.removeItem('token');
+    localStorage.removeItem('userMustChangePassword');
     navigate('/admin', { replace: true });
   };
 
@@ -50,7 +108,7 @@ function Settings() {
     <div className="content-section">
       <div className="section-header">
         <h2>Ayarlar</h2>
-        <button className="btn btn-primary" onClick={handleSave} disabled={activeTab !== 'profile' || !isDirty}>
+        <button className="btn btn-primary" onClick={handleSave} disabled={activeTab !== 'profile' || !profileDirty}>
           <FiSave /> Kaydet
         </button>
       </div>
@@ -71,13 +129,16 @@ function Settings() {
             <li className={activeTab === 'session' ? 'active' : ''} onClick={() => handleTabChange('session')}>
               <FiShield /> Oturum
             </li>
+            <li className={activeTab === 'security' ? 'active' : ''} onClick={() => handleTabChange('security')}>
+              <FiLock /> Sifre
+            </li>
           </ul>
         </div>
 
         <div className="settings-content">
           <div className="settings-header">
             <h3>
-              {activeTab === 'profile' ? 'Profil Ayarlari' : 'Oturum Ayarlari'}
+              {activeTab === 'profile' ? 'Profil Ayarlari' : activeTab === 'session' ? 'Oturum Ayarlari' : 'Sifre Degistir'}
             </h3>
           </div>
           <div className="settings-body">
@@ -114,7 +175,7 @@ function Settings() {
                   </div>
                 </div>
               </div>
-            ) : (
+            ) : activeTab === 'session' ? (
               <div className="settings-form">
                 <div className="settings-note-card">
                   <FiShield />
@@ -126,6 +187,59 @@ function Settings() {
                   </button>
                 </div>
               </div>
+            ) : (
+              <form className="settings-form" onSubmit={handleChangePassword}>
+                {mustChangePassword ? (
+                  <div className="admin-feedback error" style={{ marginBottom: '14px' }}>
+                    <span>Bu hesap gecici sifre ile acildi. Lutfen sifrenizi hemen degistirin.</span>
+                  </div>
+                ) : null}
+                <div className="settings-note-card">
+                  <FiLock />
+                  <p>Guvenliginiz icin duzenli sifre degisikligi yapin.</p>
+                </div>
+
+                <div className="form-group">
+                  <label>Mevcut Sifre</label>
+                  <input
+                    type="password"
+                    value={passwordForm.currentPassword}
+                    onChange={(e) => handlePasswordFieldChange('currentPassword', e.target.value)}
+                    required
+                    disabled={changingPassword}
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label>Yeni Sifre</label>
+                  <input
+                    type="password"
+                    value={passwordForm.newPassword}
+                    onChange={(e) => handlePasswordFieldChange('newPassword', e.target.value)}
+                    minLength={6}
+                    required
+                    disabled={changingPassword}
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label>Yeni Sifre (Tekrar)</label>
+                  <input
+                    type="password"
+                    value={passwordForm.confirmPassword}
+                    onChange={(e) => handlePasswordFieldChange('confirmPassword', e.target.value)}
+                    minLength={6}
+                    required
+                    disabled={changingPassword}
+                  />
+                </div>
+
+                <div className="form-actions" style={{ marginTop: 0 }}>
+                  <button type="submit" className="btn btn-primary" disabled={changingPassword}>
+                    {changingPassword ? 'Degistiriliyor...' : 'Sifreyi Degistir'}
+                  </button>
+                </div>
+              </form>
             )}
           </div>
         </div>

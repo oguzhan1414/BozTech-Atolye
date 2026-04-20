@@ -48,6 +48,7 @@ export const authService = {
     localStorage.removeItem('token');
     localStorage.removeItem('userRole');
     localStorage.removeItem('userName');
+    localStorage.removeItem('userMustChangePassword');
     window.location.href = '/admin';
   }
 };

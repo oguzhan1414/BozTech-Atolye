@@ -1,6 +1,20 @@
 const User = require('../models/User');
 const jwt = require('jsonwebtoken');
+const crypto = require('crypto');
 const { validationResult } = require('express-validator');
+
+const TEMP_PASSWORD_CHARS = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789!@#$%';
+
+const generateTemporaryPassword = (length = 12) => {
+  const bytes = crypto.randomBytes(length);
+  let password = '';
+
+  for (let index = 0; index < length; index += 1) {
+    password += TEMP_PASSWORD_CHARS[bytes[index] % TEMP_PASSWORD_CHARS.length];
+  }
+
+  return password;
+};
 
 // Token oluştur
 const generateToken = (userId) => {
@@ -19,8 +33,10 @@ const login = async (req, res) => {
     // Validasyon hatalarını kontrol et
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
+      const firstError = errors.array()[0];
       return res.status(400).json({ 
         success: false, 
+        message: firstError?.msg || 'Gecerli veri giriniz',
         errors: errors.array() 
       });
     }
@@ -62,7 +78,8 @@ const login = async (req, res) => {
         email: user.email,
         role: user.role,
         permissions: user.permissions,
-        lastLogin: user.lastLogin
+        lastLogin: user.lastLogin,
+        mustChangePassword: Boolean(user.mustChangePassword)
       }
     });
 
@@ -88,7 +105,8 @@ const verifyToken = async (req, res) => {
         name: req.user.name,
         email: req.user.email,
         role: req.user.role,
-        permissions: req.user.permissions
+        permissions: req.user.permissions,
+        mustChangePassword: Boolean(req.user.mustChangePassword)
       }
     });
   } catch (error) {
@@ -106,13 +124,16 @@ const registerEditor = async (req, res) => {
   try {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
+      const firstError = errors.array()[0];
       return res.status(400).json({ 
         success: false, 
+        message: firstError?.msg || 'Gecerli veri giriniz',
         errors: errors.array() 
       });
     }
 
-    const { name, email, password, permissions, role, isActive } = req.body;
+    const { name, email, permissions, role, isActive } = req.body;
+    const temporaryPassword = generateTemporaryPassword(12);
 
     // Email var mı kontrol et
     const userExists = await User.findOne({ email });
@@ -127,14 +148,16 @@ const registerEditor = async (req, res) => {
     const user = await User.create({
       name,
       email,
-      password,
+      password: temporaryPassword,
       role: role || 'editor',
       isActive: isActive !== undefined ? isActive : true,
+      mustChangePassword: true,
       permissions: permissions || {
         announcements: false,
         events: false,
         applications: false,
         photos: false,
+        clubInfo: false,
         users: false
       }
     });
@@ -142,12 +165,14 @@ const registerEditor = async (req, res) => {
     res.status(201).json({
       success: true,
       message: 'Editör başarıyla oluşturuldu',
+      temporaryPassword,
       user: {
         id: user._id,
         name: user.name,
         email: user.email,
         role: user.role,
-        permissions: user.permissions
+        permissions: user.permissions,
+        mustChangePassword: true
       }
     });
 
@@ -165,10 +190,33 @@ const registerEditor = async (req, res) => {
 // @access  Private
 const changePassword = async (req, res) => {
   try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      const firstError = errors.array()[0];
+      return res.status(400).json({
+        success: false,
+        message: firstError?.msg || 'Gecerli veri giriniz',
+        errors: errors.array()
+      });
+    }
+
     const { currentPassword, newPassword } = req.body;
+
+    if (currentPassword === newPassword) {
+      return res.status(400).json({
+        success: false,
+        message: 'Yeni sifre mevcut sifre ile ayni olamaz'
+      });
+    }
     
     // Kullanıcıyı bul (şifreyle birlikte)
     const user = await User.findById(req.user._id).select('+password');
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'Kullanici bulunamadi'
+      });
+    }
     
     // Mevcut şifreyi kontrol et
     const isMatch = await user.comparePassword(currentPassword);
@@ -181,6 +229,7 @@ const changePassword = async (req, res) => {
 
     // Yeni şifreyi set et
     user.password = newPassword;
+    user.mustChangePassword = false;
     await user.save();
 
     res.json({ 

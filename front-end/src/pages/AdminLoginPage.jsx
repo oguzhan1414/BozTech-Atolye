@@ -24,6 +24,7 @@ function AdminLoginPage() {
                 localStorage.setItem('userRole', response.user.role);
                 localStorage.setItem('userName', response.user.name);
                 localStorage.setItem('userPermissions', JSON.stringify(response.user.permissions || {}));
+                localStorage.setItem('userMustChangePassword', String(Boolean(response.user.mustChangePassword)));
 
                 navigate('/admin/panel');
             }

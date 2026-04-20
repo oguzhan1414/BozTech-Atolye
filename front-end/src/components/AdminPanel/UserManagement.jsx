@@ -13,7 +13,7 @@ function UserManagement() {
   const [filterRole, setFilterRole] = useState('all');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [successMessage, setSuccessMessage] = useState('');
+  const [createdCredentials, setCreatedCredentials] = useState(null);
 
   // Backend'den kullanıcıları çek
   useEffect(() => {
@@ -66,6 +66,7 @@ function UserManagement() {
         const response = await userService.update(editingUser._id, formData);
         if (response.success) {
           setUsers(users.map(u => u._id === editingUser._id ? response.data : u));
+          setShowModal(false);
         }
       } else {
         // Yeni kullanıcı ekle (authService.registerEditor kullan)
@@ -75,7 +76,11 @@ function UserManagement() {
           const newUser = { ...response.user, _id: response.user._id || response.user.id };
           setUsers([newUser, ...users]);
           setShowModal(false);
-          setSuccessMessage('Yeni üye başarıyla oluşturuldu!');
+          setCreatedCredentials({
+            name: response.user.name,
+            email: response.user.email,
+            temporaryPassword: response.temporaryPassword || ''
+          });
         }
       }
     } catch (error) {
@@ -220,17 +225,37 @@ function UserManagement() {
       )}
 
       {/* BAŞARI MODALI */}
-      {successMessage && (
+      {createdCredentials && (
         <div className="modal-overlay" style={{ zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(15,23,42,0.8)' }}>
           <div className="modal-content" style={{ padding: '30px', textAlign: 'center', borderRadius: '12px', maxWidth: '400px' }}>
             <div style={{ fontSize: '48px', color: '#10b981', marginBottom: '16px' }}>
               <FiUserCheck style={{ display: 'inline-block' }} />
             </div>
             <h3 style={{ margin: '0 0 16px', color: '#1e293b' }}>İşlem Başarılı</h3>
-            <p style={{ color: '#64748b', fontSize: '16px', marginBottom: '24px' }}>{successMessage}</p>
+            <p style={{ color: '#64748b', fontSize: '16px', marginBottom: '12px' }}>Yeni kullanici olusturuldu.</p>
+            <p style={{ color: '#334155', fontSize: '14px', marginBottom: '8px' }}><strong>{createdCredentials.email}</strong></p>
+            <p style={{ color: '#64748b', fontSize: '13px', marginBottom: '10px' }}>Gecici sifre (bir kere gosterilir):</p>
+            <div style={{ background: '#0f172a', color: '#f8fafc', borderRadius: '8px', padding: '10px 12px', marginBottom: '14px', fontFamily: 'monospace', fontSize: '15px', letterSpacing: '0.3px' }}>
+              {createdCredentials.temporaryPassword || 'Uretilemedi'}
+            </div>
+            <button
+              type="button"
+              className="btn btn-outline"
+              style={{ width: '100%', marginBottom: '10px' }}
+              onClick={async () => {
+                if (!createdCredentials.temporaryPassword) return;
+                try {
+                  await navigator.clipboard.writeText(createdCredentials.temporaryPassword);
+                } catch (copyError) {
+                  console.warn('Sifre kopyalanamadi:', copyError);
+                }
+              }}
+            >
+              Gecici Sifreyi Kopyala
+            </button>
             <button 
               className="btn btn-primary" 
-              onClick={() => setSuccessMessage('')}
+              onClick={() => setCreatedCredentials(null)}
               style={{ width: '100%', padding: '12px', borderRadius: '8px', fontSize: '15px' }}
             >
               Kapat
@@ -247,7 +272,6 @@ function UserModal({ user, onClose, onSave }) {
   const [formData, setFormData] = useState({
     name: user?.name || '',
     email: user?.email || '',
-    password: '',
     role: user?.role || 'editor',
     isActive: user?.isActive !== undefined ? user.isActive : true,
     permissions: user?.permissions || {
@@ -331,20 +355,18 @@ function UserModal({ user, onClose, onSave }) {
             />
           </div>
 
-          {!user && (
+          {!user ? (
             <div className="form-group">
-              <label>Şifre</label>
-              <input 
-                type="password" 
-                value={formData.password}
-                onChange={(e) => handleFieldChange('password', e.target.value)}
-                required={!user}
-                minLength={6}
-                disabled={saving}
-                placeholder="En az 6 karakter"
+              <label>Gecici Sifre</label>
+              <input
+                type="text"
+                value="Sistem otomatik rastgele sifre uretecek"
+                disabled
+                readOnly
               />
+              <small className="text-muted">Kullanici bu sifre ile giris yapip Ayarlar ekranindan sifresini degistirecek.</small>
             </div>
-          )}
+          ) : null}
 
           <div className="form-row">
             <div className="form-group">

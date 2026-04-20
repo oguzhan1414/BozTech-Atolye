@@ -18,7 +18,12 @@ const loginValidation = [
 const registerValidation = [
   body('name').notEmpty().withMessage('İsim gereklidir'),
   body('email').isEmail().withMessage('Geçerli bir email adresi girin'),
-  body('password').isLength({ min: 6 }).withMessage('Şifre en az 6 karakter olmalı')
+  body('role').optional().isIn(['admin', 'editor']).withMessage('Rol admin veya editor olmalidir')
+];
+
+const changePasswordValidation = [
+  body('currentPassword').notEmpty().withMessage('Mevcut sifre bos olamaz'),
+  body('newPassword').isLength({ min: 6 }).withMessage('Yeni sifre en az 6 karakter olmali')
 ];
 
 // Public routes
@@ -26,7 +31,7 @@ router.post('/login', loginValidation, login);
 
 // Private routes
 router.get('/verify', protect, verifyToken);
-router.put('/change-password', protect, changePassword);
+router.put('/change-password', protect, changePasswordValidation, changePassword);
 
 // Admin only routes
 router.post('/register', protect, authorize('admin'), registerValidation, registerEditor);

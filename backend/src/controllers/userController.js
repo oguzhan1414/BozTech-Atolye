@@ -46,8 +46,12 @@ const updateUser = async (req, res) => {
     if (permissions) user.permissions = permissions;
 
     // Şifre güncellenmek istiyorsa
-    if (password && password.length >= 6) {
+    if (password) {
+      if (password.length < 6) {
+        return res.status(400).json({ success: false, message: 'Sifre en az 6 karakter olmali' });
+      }
       user.password = password;
+      user.mustChangePassword = true;
     }
 
     await user.save(); // pre-save hook will hash password if changed
