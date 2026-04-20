@@ -38,7 +38,6 @@ function ProjectsPage() {
       <div className="container">
         <header className="archive-header">
           <h1><FiCpu /> Tum Projeler</h1>
-          <p>Proje listesi olusturulma tarihine gore siralanir.</p>
         </header>
 
         <div className="archive-grid">

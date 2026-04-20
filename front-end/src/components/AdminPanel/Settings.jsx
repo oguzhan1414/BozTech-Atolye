@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { FiSave, FiSettings, FiUser, FiShield, FiLogOut, FiLock, FiEye, FiEyeOff } from 'react-icons/fi';
 import { authService } from '../../services/authService';
+import { userService } from '../../services/userService';
 import UnsavedChangesModal from './UnsavedChangesModal';
 import { useUnsavedChangesPrompt } from '../../hooks/useUnsavedChangesPrompt';
 
@@ -27,6 +28,7 @@ function Settings() {
   const [showCurrentPassword, setShowCurrentPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [savingProfile, setSavingProfile] = useState(false);
 
   const profileDirty = useMemo(() => profileName.trim() !== savedName.trim(), [profileName, savedName]);
   const passwordDirty = useMemo(() => {
@@ -72,17 +74,26 @@ function Settings() {
     });
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     const normalizedName = profileName.trim() || 'Yonetici';
 
-    localStorage.setItem('userName', normalizedName);
-    setSavedName(normalizedName);
-    setProfileName(normalizedName);
-    setFeedback({ type: 'success', message: 'Ayarlar kaydedildi.' });
+    try {
+      setSavingProfile(true);
+      await userService.updateMyProfile({ name: normalizedName });
 
-    window.dispatchEvent(new CustomEvent('admin-profile-updated', {
-      detail: { name: normalizedName },
-    }));
+      localStorage.setItem('userName', normalizedName);
+      setSavedName(normalizedName);
+      setProfileName(normalizedName);
+      setFeedback({ type: 'success', message: 'Ayarlar kaydedildi.' });
+
+      window.dispatchEvent(new CustomEvent('admin-profile-updated', {
+        detail: { name: normalizedName },
+      }));
+    } catch (apiError) {
+      setFeedback({ type: 'error', message: apiError?.message || 'Profil guncellenirken bir hata olustu.' });
+    } finally {
+      setSavingProfile(false);
+    }
   };
 
   const handlePasswordFieldChange = (field, value) => {
@@ -137,8 +148,8 @@ function Settings() {
     <div className="content-section">
       <div className="section-header">
         <h2>Ayarlar</h2>
-        <button className="btn btn-primary" onClick={handleSave} disabled={activeTab !== 'profile' || !profileDirty}>
-          <FiSave /> Kaydet
+        <button className="btn btn-primary" onClick={handleSave} disabled={savingProfile || activeTab !== 'profile' || !profileDirty}>
+          <FiSave /> {savingProfile ? 'Kaydediliyor...' : 'Kaydet'}
         </button>
       </div>
 
@@ -173,11 +184,6 @@ function Settings() {
           <div className="settings-body">
             {activeTab === 'profile' ? (
               <div className="settings-form">
-                <div className="settings-note-card">
-                  <FiSettings />
-                  <p>Bu sayfa sadeleştirildi. Sadece aktif çalışan ayarlar tutuldu.</p>
-                </div>
-
                 <div className="form-group">
                   <label>Panelde Gorunen Ad</label>
                   <input
@@ -190,7 +196,6 @@ function Settings() {
                     placeholder="Yonetici"
                     maxLength={60}
                   />
-                  <small className="settings-helper-text">Kaydedildiginde sol menu ve ust profil alaninda guncellenir.</small>
                 </div>
 
                 <div className="settings-info-grid">
@@ -206,10 +211,6 @@ function Settings() {
               </div>
             ) : activeTab === 'session' ? (
               <div className="settings-form">
-                <div className="settings-note-card">
-                  <FiShield />
-                  <p>Aktif oturumu guvenli sekilde kapatmak icin cikis yapabilirsiniz.</p>
-                </div>
                 <div className="form-actions" style={{ marginTop: 0, paddingTop: 0, borderTop: 'none' }}>
                   <button type="button" className="btn btn-danger" onClick={handleLogout}>
                     <FiLogOut /> Cikis Yap
@@ -223,10 +224,6 @@ function Settings() {
                     <span>Bu hesap gecici sifre ile acildi. Lutfen sifrenizi hemen degistirin.</span>
                   </div>
                 ) : null}
-                <div className="settings-note-card">
-                  <FiLock />
-                  <p>Guvenliginiz icin duzenli sifre degisikligi yapin.</p>
-                </div>
 
                 <div className="form-group">
                   <label>Mevcut Sifre</label>

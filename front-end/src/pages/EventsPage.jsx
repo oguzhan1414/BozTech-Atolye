@@ -50,7 +50,6 @@ function EventsPage() {
       <div className="container">
         <header className="archive-header">
           <h1><FiCalendar /> Tum Etkinlikler</h1>
-          <p>Yaklasan ve gecmis etkinlikler tek listede tarihe gore siralanir.</p>
         </header>
 
         <div className="archive-filters">

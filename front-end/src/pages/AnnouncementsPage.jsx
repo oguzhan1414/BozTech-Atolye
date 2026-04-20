@@ -38,7 +38,6 @@ function AnnouncementsPage() {
       <div className="container">
         <header className="archive-header">
           <h1><FiBell /> Tum Duyurular</h1>
-          <p>{sortedAnnouncements.length} duyuru tarihe gore listeleniyor.</p>
         </header>
 
         <div className="archive-grid">

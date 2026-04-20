@@ -33,6 +33,16 @@ export const userService = {
     }
   },
 
+  // Giris yapan kullanicinin profilini guncelle
+  updateMyProfile: async (data) => {
+    try {
+      const response = await userApi.putByPath('/me', data);
+      return response;
+    } catch (error) {
+      throw error;
+    }
+  },
+
   // Kullanıcı sil
   delete: async (id) => {
     try {

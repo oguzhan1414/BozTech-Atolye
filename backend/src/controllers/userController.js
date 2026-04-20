@@ -100,8 +100,46 @@ const deleteUser = async (req, res) => {
   }
 };
 
+// @desc    Giris yapan kullanicinin profilini guncelle
+// @route   PUT /api/users/me
+// @access  Private
+const updateMyProfile = async (req, res) => {
+  try {
+    const { name } = req.body;
+
+    const normalizedName = String(name || '').trim();
+    if (!normalizedName) {
+      return res.status(400).json({ success: false, message: 'Ad alani bos birakilamaz' });
+    }
+
+    const user = await User.findById(req.user._id);
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'Kullanici bulunamadi' });
+    }
+
+    user.name = normalizedName;
+    await user.save();
+
+    res.json({
+      success: true,
+      message: 'Profil bilgisi guncellendi',
+      data: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        permissions: user.permissions,
+      },
+    });
+  } catch (error) {
+    console.error('Profil guncellenirken hata:', error);
+    res.status(500).json({ success: false, message: 'Sunucu hatasi' });
+  }
+};
+
 module.exports = {
   getUsers,
   updateUser,
-  deleteUser
+  deleteUser,
+  updateMyProfile
 };

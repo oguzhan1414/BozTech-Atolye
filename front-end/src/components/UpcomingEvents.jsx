@@ -65,12 +65,12 @@ function UpcomingEvents({ events = [] }) {
                         <span>{event.time}</span>
                       </div>
                       <div className="ue-detail-item">
-                        <FiMapPin size={14} />
-                        <span>{event.location}</span>
-                      </div>
-                      <div className="ue-detail-item">
                         <FiUsers size={14} />
                         <span>{event.participants || 0} Katilimci</span>
+                      </div>
+                      <div className="ue-detail-item">
+                        <FiMapPin size={14} />
+                        <span>{event.location}</span>
                       </div>
                     </div>
                     
