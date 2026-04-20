@@ -47,6 +47,21 @@ function AdminLayout() {
   const storedPermissions = JSON.parse(localStorage.getItem('userPermissions') || '{}');
   const userRole = localStorage.getItem('userRole');
 
+  const hasPermission = (permission) => {
+    if (userRole === 'admin') return true;
+    if (!permission) return true;
+    return Boolean(storedPermissions?.[permission]);
+  };
+
+  useEffect(() => {
+    const mustChangePassword = localStorage.getItem('userMustChangePassword') === 'true';
+    if (!mustChangePassword) return;
+
+    if (location.pathname !== '/admin/panel/settings') {
+      navigate('/admin/panel/settings?tab=security', { replace: true });
+    }
+  }, [location.pathname, navigate]);
+
   const allMenuItems = [
     { path: '/admin/panel', icon: <FiHome />, label: 'Dashboard', requiredPerm: null },
     { path: '/admin/panel/applications', icon: <FiFileText />, label: 'Tüm Başvurular', requiredPerm: 'applications' },
@@ -55,20 +70,17 @@ function AdminLayout() {
     { path: '/admin/panel/photos', icon: <FiImage />, label: 'Foto Galeri', requiredPerm: 'photos' },
     { path: '/admin/panel/club-info', icon: <FiInfo />, label: 'Kulüp Bilgi', requiredPerm: 'clubInfo' },
     { path: '/admin/panel/users', icon: <FiUsers />, label: 'Kullanıcılar', requiredPerm: 'users' },
-    { path: '/admin/panel/settings', icon: <FiSettings />, label: 'Ayarlar', requiredPerm: 'adminOnly' }
+    { path: '/admin/panel/settings', icon: <FiSettings />, label: 'Ayarlar', requiredPerm: null }
   ];
 
   // Menüyü yetkilere göre filtrele
-  const menuItems = allMenuItems.filter(item => {
-    if (userRole === 'admin') return true; // Admin her şeyi görür
-    if (!item.requiredPerm) return true; // Dashboard herkese açık
-    if (item.requiredPerm === 'adminOnly') return false; // Ayarlar sadece admin'e
-    return storedPermissions[item.requiredPerm] === true;
-  });
+  const menuItems = allMenuItems.filter((item) => hasPermission(item.requiredPerm));
 
   const handleLogout = () => {
     // Logout işlemi
     localStorage.removeItem('token');
+    localStorage.removeItem('userPermissions');
+    localStorage.removeItem('userMustChangePassword');
     navigate('/');
   };
 

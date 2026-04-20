@@ -13,6 +13,13 @@ import ApplicationsManagement from '../components/AdminPanel/ApplicationsManagem
 function AdminPage() {
   const isAuthenticated = localStorage.getItem('token') ? true : false;
   const userRole = localStorage.getItem('userRole') || 'viewer';
+  const storedPermissions = JSON.parse(localStorage.getItem('userPermissions') || '{}');
+
+  const hasPermission = (permission) => {
+    if (userRole === 'admin') return true;
+    if (!permission) return true;
+    return Boolean(storedPermissions?.[permission]);
+  };
 
   if (!isAuthenticated || !['admin', 'editor'].includes(userRole)) {
     return <Navigate to="/admin" replace />;
@@ -26,13 +33,13 @@ function AdminPage() {
         {/* /admin/panel/dashboard sayfası */}
         <Route path="dashboard" element={<Dashboard />} />
         {/* /admin/panel/announcements sayfası */}
-        <Route path="announcements" element={<AnnouncementManagement />} />
-        <Route path="events" element={<EventManagement />} />
-        <Route path="photos" element={<PhotoManagement />} />
+        <Route path="announcements" element={hasPermission('announcements') ? <AnnouncementManagement /> : <Navigate to="/admin/panel" replace />} />
+        <Route path="events" element={hasPermission('events') ? <EventManagement /> : <Navigate to="/admin/panel" replace />} />
+        <Route path="photos" element={hasPermission('photos') ? <PhotoManagement /> : <Navigate to="/admin/panel" replace />} />
         <Route path="settings" element={<Settings/>}></Route>
-        <Route path="club-info" element={<ClubInfoManagement/>}></Route>
-        <Route path="users" element={<UserManagement/>}></Route>
-        <Route path="applications" element={<ApplicationsManagement/>}></Route>
+        <Route path="club-info" element={hasPermission('clubInfo') ? <ClubInfoManagement/> : <Navigate to="/admin/panel" replace />}></Route>
+        <Route path="users" element={hasPermission('users') ? <UserManagement/> : <Navigate to="/admin/panel" replace />}></Route>
+        <Route path="applications" element={hasPermission('applications') ? <ApplicationsManagement/> : <Navigate to="/admin/panel" replace />}></Route>
         
 
       </Route>

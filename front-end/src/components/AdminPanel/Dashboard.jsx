@@ -35,6 +35,19 @@ function Dashboard() {
   const [sendingMail, setSendingMail] = useState(false);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
+  const userRole = localStorage.getItem('userRole') || 'viewer';
+  const storedPermissions = JSON.parse(localStorage.getItem('userPermissions') || '{}');
+
+  const canAccess = (permission) => {
+    if (userRole === 'admin') return true;
+    if (!permission) return true;
+    return Boolean(storedPermissions?.[permission]);
+  };
+
+  const canApplications = canAccess('applications');
+  const canAnnouncements = canAccess('announcements');
+  const canEvents = canAccess('events');
+  const canPhotos = canAccess('photos');
 
   useEffect(() => {
     fetchDashboardData();
@@ -46,10 +59,18 @@ function Dashboard() {
       
       // Tüm verileri paralel çek (yetkisi olmayanlarda çökmemesi için catch eklendi)
       const [appsRes, announcementsRes, eventsRes, photosRes] = await Promise.all([
-        applicationService.getAll({ status: 'pending', limit: 8, sort: '-appliedAt' }).catch(e => ({ success: false })),
-        announcementService.getAll().catch(e => ({ success: false })),
-        eventService.getAll({ limit: 1 }).catch(e => ({ success: false })), 
-        photoService.getAll({ limit: 1 }).catch(e => ({ success: false }))   
+        canApplications
+          ? applicationService.getAll({ status: 'pending', limit: 8, sort: '-appliedAt' }).catch(() => ({ success: false }))
+          : Promise.resolve({ success: false }),
+        canAnnouncements
+          ? announcementService.getAll().catch(() => ({ success: false }))
+          : Promise.resolve({ success: false }),
+        canEvents
+          ? eventService.getAll({ limit: 1 }).catch(() => ({ success: false }))
+          : Promise.resolve({ success: false }),
+        canPhotos
+          ? photoService.getAll({ limit: 1 }).catch(() => ({ success: false }))
+          : Promise.resolve({ success: false })
       ]);
 
       // Başvurular
@@ -165,49 +186,58 @@ function Dashboard() {
     <div className="dashboard">
       {/* Özet Kartlar */}
       <div className="stats-grid">
-        <div className="stat-card">
-          <div className="stat-icon green">
-            <FiUserPlus />
+        {canApplications ? (
+          <div className="stat-card">
+            <div className="stat-icon green">
+              <FiUserPlus />
+            </div>
+            <div className="stat-content">
+              <span className="stat-label">Toplam Başvuru</span>
+              <span className="stat-value">{stats.totalApplications}</span>
+              <span className="stat-pending">Bekleyen: {stats.pendingApplications}</span>
+            </div>
           </div>
-          <div className="stat-content">
-            <span className="stat-label">Toplam Başvuru</span>
-            <span className="stat-value">{stats.totalApplications}</span>
-            <span className="stat-pending">Bekleyen: {stats.pendingApplications}</span>
-          </div>
-        </div>
+        ) : null}
 
-        <div className="stat-card">
-          <div className="stat-icon purple">
-            <FiBell />
+        {canAnnouncements ? (
+          <div className="stat-card">
+            <div className="stat-icon purple">
+              <FiBell />
+            </div>
+            <div className="stat-content">
+              <span className="stat-label">Duyurular</span>
+              <span className="stat-value">{stats.totalAnnouncements}</span>
+            </div>
           </div>
-          <div className="stat-content">
-            <span className="stat-label">Duyurular</span>
-            <span className="stat-value">{stats.totalAnnouncements}</span>
-          </div>
-        </div>
+        ) : null}
 
-        <div className="stat-card">
-          <div className="stat-icon orange">
-            <FiCalendar />
+        {canEvents ? (
+          <div className="stat-card">
+            <div className="stat-icon orange">
+              <FiCalendar />
+            </div>
+            <div className="stat-content">
+              <span className="stat-label">Etkinlikler</span>
+              <span className="stat-value">{stats.totalEvents}</span>
+            </div>
           </div>
-          <div className="stat-content">
-            <span className="stat-label">Etkinlikler</span>
-            <span className="stat-value">{stats.totalEvents}</span>
-          </div>
-        </div>
+        ) : null}
 
-        <div className="stat-card">
-          <div className="stat-icon pink">
-            <FiImage />
+        {canPhotos ? (
+          <div className="stat-card">
+            <div className="stat-icon pink">
+              <FiImage />
+            </div>
+            <div className="stat-content">
+              <span className="stat-label">Fotoğraflar</span>
+              <span className="stat-value">{stats.totalPhotos}</span>
+            </div>
           </div>
-          <div className="stat-content">
-            <span className="stat-label">Fotoğraflar</span>
-            <span className="stat-value">{stats.totalPhotos}</span>
-          </div>
-        </div>
+        ) : null}
       </div>
 
       {/* Son Başvurular */}
+      {canApplications ? (
       <div className="recent-section">
         <div className="section-header">
           <h3>📋 Son Başvurular</h3>
@@ -293,6 +323,7 @@ function Dashboard() {
           )}
         </div>
       </div>
+      ) : null}
 
       {/* Hızlı İşlemler */}
       <div className="quick-actions">
@@ -300,35 +331,46 @@ function Dashboard() {
           <h3>⚡ Hızlı İşlemler</h3>
         </div>
         <div className="actions-grid">
-          <button 
-            className="action-btn"
-            onClick={() => handleQuickAction('/admin/panel/announcements')}
-          >
-            + Yeni Duyuru
-          </button>
-          <button 
-            className="action-btn"
-            onClick={() => handleQuickAction('/admin/panel/events')}
-          >
-            + Yeni Etkinlik
-          </button>
-          <button 
-            className="action-btn"
-            onClick={() => handleQuickAction('/admin/panel/photos')}
-          >
-            📷 Fotoğraf Yükle
-          </button>
-          <button 
-            className="action-btn"
-            onClick={() => handleQuickAction('/admin/panel/applications/export')}
-          >
-            📊 Rapor Al
-          </button>
+          {canAnnouncements ? (
+            <button 
+              className="action-btn"
+              onClick={() => handleQuickAction('/admin/panel/announcements')}
+            >
+              + Yeni Duyuru
+            </button>
+          ) : null}
+          {canEvents ? (
+            <button 
+              className="action-btn"
+              onClick={() => handleQuickAction('/admin/panel/events')}
+            >
+              + Yeni Etkinlik
+            </button>
+          ) : null}
+          {canPhotos ? (
+            <button 
+              className="action-btn"
+              onClick={() => handleQuickAction('/admin/panel/photos')}
+            >
+              📷 Fotoğraf Yükle
+            </button>
+          ) : null}
+          {canApplications ? (
+            <button 
+              className="action-btn"
+              onClick={() => handleQuickAction('/admin/panel/applications')}
+            >
+              📊 Basvurulari Incele
+            </button>
+          ) : null}
+          {!canApplications && !canAnnouncements && !canEvents && !canPhotos ? (
+            <p className="text-muted">Bu hesap icin tanimli hizli islem bulunmuyor.</p>
+          ) : null}
         </div>
       </div>
 
       {/* MAİL GÖNDERME MODALI */}
-      {mailModalApp && (
+      {canApplications && mailModalApp && (
         <div className="modal-overlay" onClick={() => setMailModalApp(null)} style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(15,23,42,0.8)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
           <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ background: 'white', borderRadius: '16px', width: '100%', maxWidth: '500px', padding: '36px', position: 'relative', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.25)' }}>
             
@@ -361,7 +403,7 @@ function Dashboard() {
       )}
 
       {/* BAŞVURU DETAY MODALI */}
-      {selectedApp && (
+      {canApplications && selectedApp && (
         <div className="modal-overlay" onClick={() => setSelectedApp(null)} style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(15,23,42,0.8)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
           <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ background: 'white', borderRadius: '16px', width: '100%', maxWidth: '700px', maxHeight: '90vh', overflowY: 'auto', padding: '36px', position: 'relative', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.25)' }}>
             

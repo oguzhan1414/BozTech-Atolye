@@ -1,13 +1,19 @@
-import React, { useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useEffect, useMemo, useState } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { FiSave, FiSettings, FiUser, FiShield, FiLogOut, FiLock } from 'react-icons/fi';
 import { authService } from '../../services/authService';
 import UnsavedChangesModal from './UnsavedChangesModal';
 import { useUnsavedChangesPrompt } from '../../hooks/useUnsavedChangesPrompt';
 
 function Settings() {
+  const location = useLocation();
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState('profile');
+  const resolveTabFromQuery = (search) => {
+    const queryTab = new URLSearchParams(search).get('tab');
+    return ['profile', 'session', 'security'].includes(queryTab) ? queryTab : 'profile';
+  };
+
+  const [activeTab, setActiveTab] = useState(() => resolveTabFromQuery(location.search));
   const [savedName, setSavedName] = useState(localStorage.getItem('userName') || 'Yonetici');
   const [profileName, setProfileName] = useState(savedName);
   const [passwordForm, setPasswordForm] = useState({
@@ -39,9 +45,17 @@ function Settings() {
   const hasActiveSession = Boolean(localStorage.getItem('token'));
   const mustChangePassword = localStorage.getItem('userMustChangePassword') === 'true';
 
+  useEffect(() => {
+    const tabFromQuery = resolveTabFromQuery(location.search);
+    setActiveTab((prev) => (prev === tabFromQuery ? prev : tabFromQuery));
+  }, [location.search]);
+
   const handleTabChange = (nextTab) => {
     if (nextTab === activeTab) return;
-    requestConfirmation(() => setActiveTab(nextTab));
+    requestConfirmation(() => {
+      setActiveTab(nextTab);
+      navigate(`/admin/panel/settings?tab=${nextTab}`, { replace: true });
+    });
   };
 
   const handleSave = () => {
