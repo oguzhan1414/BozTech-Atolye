@@ -45,7 +45,6 @@ const createDefaultBoardForm = () => ({
   projectName: '',
   isClubPresident: false,
   isProjectLead: false,
-  order: 0,
 });
 
 const normalizeBoardRole = (value) => String(value || '')
@@ -56,8 +55,7 @@ const normalizeBoardRole = (value) => String(value || '')
 const inferBoardPlacementFromMember = (member = {}) => {
   const roleText = normalizeBoardRole(member.role);
   const inferredClubPresident = Boolean(member.isClubPresident)
-    || roleText.includes('kulup baskani')
-    || roleText === 'baskan';
+    || roleText.includes('kulup baskani');
 
   const inferredGroupType = inferredClubPresident
     ? 'club'
@@ -72,7 +70,6 @@ const inferBoardPlacementFromMember = (member = {}) => {
     isClubPresident: inferredClubPresident,
     isProjectLead: inferredProjectLead,
     projectName: inferredGroupType === 'project' ? (member.projectName || '') : '',
-    order: Number.isFinite(Number(member.order)) ? Number(member.order) : 0,
   };
 };
 
@@ -114,6 +111,14 @@ function ClubInfoManagement() {
   const [showProjectForm, setShowProjectForm] = useState(false);
   const [projectForm, setProjectForm] = useState({ title: '', desc: '', longDesc: '', image: null, tag: '', tech: '' });
 
+  const projectNameOptions = useMemo(() => {
+    const names = projects
+      .map((project) => String(project?.title || '').trim())
+      .filter(Boolean);
+
+    return Array.from(new Set(names)).sort((a, b) => a.localeCompare(b, 'tr'));
+  }, [projects]);
+
   const sortedBoardMembers = useMemo(() => {
     return [...boardMembers].sort((a, b) => {
       const aPlacement = inferBoardPlacementFromMember(a);
@@ -135,9 +140,6 @@ function ClubInfoManagement() {
           return aPlacement.isProjectLead ? -1 : 1;
         }
       }
-
-      const orderCompare = Number(aPlacement.order || 0) - Number(bPlacement.order || 0);
-      if (orderCompare !== 0) return orderCompare;
 
       return String(a.name || '').localeCompare(String(b.name || ''), 'tr');
     });
@@ -425,7 +427,6 @@ function ClubInfoManagement() {
       fd.append('groupType', boardForm.isClubPresident ? 'club' : boardForm.groupType);
       fd.append('isClubPresident', String(Boolean(boardForm.isClubPresident)));
       fd.append('isProjectLead', String(boardForm.groupType === 'project' && Boolean(boardForm.isProjectLead)));
-      fd.append('order', String(Number(boardForm.order || 0)));
       if (boardForm.groupType === 'project' && !boardForm.isClubPresident) {
         fd.append('projectName', boardForm.projectName || 'Proje Ekibi');
       }
@@ -552,15 +553,6 @@ function ClubInfoManagement() {
                 <option value="project">Proje Ekibi</option>
               </select>
 
-              <input
-                type="number"
-                min="0"
-                placeholder="Sira (kucukten buyuge)"
-                style={{ padding: '8px', borderRadius: '6px', border: '1px solid #ccc' }}
-                value={boardForm.order}
-                onChange={(e) => setBoardForm({ ...boardForm, order: e.target.value })}
-              />
-
               <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', color: '#334155' }}>
                 <input
                   type="checkbox"
@@ -583,12 +575,20 @@ function ClubInfoManagement() {
                 <>
                   <input
                     type="text"
-                    placeholder="Proje Adi"
+                    placeholder={projectNameOptions.length ? 'Proje Adi (mevcut projeler listelenir)' : 'Proje Adi'}
                     style={{ padding: '8px', borderRadius: '6px', border: '1px solid #ccc' }}
                     value={boardForm.projectName}
                     onChange={(e) => setBoardForm({ ...boardForm, projectName: e.target.value })}
+                    list="project-name-options"
                     required
                   />
+                  {projectNameOptions.length ? (
+                    <datalist id="project-name-options">
+                      {projectNameOptions.map((name) => (
+                        <option key={name} value={name} />
+                      ))}
+                    </datalist>
+                  ) : null}
                   <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', color: '#334155' }}>
                     <input
                       type="checkbox"

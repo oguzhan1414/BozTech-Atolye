@@ -76,8 +76,7 @@ const normalizeBoardRole = (value) => String(value || '')
 const inferBoardPlacement = (member = {}) => {
   const roleText = normalizeBoardRole(member.role);
   const isClubPresident = Boolean(member.isClubPresident)
-    || roleText.includes('kulup baskani')
-    || roleText === 'baskan';
+    || roleText.includes('kulup baskani');
 
   const groupType = isClubPresident
     ? 'club'
@@ -87,14 +86,11 @@ const inferBoardPlacement = (member = {}) => {
     ? (Boolean(member.isProjectLead) || roleText.includes('proje baskani'))
     : false;
 
-  const order = Number.isFinite(Number(member.order)) ? Number(member.order) : 0;
-
   return {
     isClubPresident,
     groupType,
     isProjectLead,
     projectName: groupType === 'project' ? (member.projectName || '') : '',
-    order,
   };
 };
 
@@ -196,9 +192,6 @@ function ClubInfoPage() {
           return aPlacement.isProjectLead ? -1 : 1;
         }
       }
-
-      const orderCompare = aPlacement.order - bPlacement.order;
-      if (orderCompare !== 0) return orderCompare;
 
       return String(a.name || '').localeCompare(String(b.name || ''), 'tr');
     });

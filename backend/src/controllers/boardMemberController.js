@@ -21,16 +21,10 @@ const parseBoolean = (value, fallback = false) => {
   return ['true', '1', 'yes', 'on'].includes(normalized);
 };
 
-const parseNumber = (value, fallback = 0) => {
-  const parsed = Number.parseInt(value, 10);
-  if (Number.isNaN(parsed)) return fallback;
-  return parsed;
-};
-
 const inferClubPresident = (member) => {
   if (member?.isClubPresident) return true;
   const role = normalizeText(member?.role);
-  return role.includes('kulup baskani') || role === 'baskan';
+  return role.includes('kulup baskani');
 };
 
 const inferProjectLead = (member) => {
@@ -56,7 +50,6 @@ const toBoardPayload = (body, defaults = {}) => {
 
   const isClubPresident = parseBoolean(payload.isClubPresident, defaults.isClubPresident || false);
   const isProjectLead = parseBoolean(payload.isProjectLead, defaults.isProjectLead || false);
-  const order = Math.max(0, parseNumber(payload.order, defaults.order || 0));
 
   payload.groupType = isClubPresident ? 'club' : resolvedGroupType;
   payload.projectName = payload.groupType === 'project'
@@ -64,7 +57,6 @@ const toBoardPayload = (body, defaults = {}) => {
     : '';
   payload.isClubPresident = isClubPresident;
   payload.isProjectLead = payload.groupType === 'project' ? isProjectLead : false;
-  payload.order = order;
 
   if (payload.groupType === 'project' && !payload.projectName) {
     throw new Error('Proje ekibi secildiginde proje adi zorunludur.');
@@ -99,9 +91,6 @@ const sortBoardMembers = (members) => {
         return aLead ? -1 : 1;
       }
     }
-
-    const orderCompare = parseNumber(a.order, 0) - parseNumber(b.order, 0);
-    if (orderCompare !== 0) return orderCompare;
 
     return String(a.name || '').localeCompare(String(b.name || ''), 'tr');
   });
