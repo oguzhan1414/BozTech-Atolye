@@ -34,6 +34,61 @@ const createDefaultSectionForm = () => ({
   socialYoutube: '',
 });
 
+const createDefaultBoardForm = () => ({
+  name: '',
+  role: '',
+  image: null,
+  linkedin: '',
+  github: '',
+  email: '',
+  groupType: 'club',
+  projectName: '',
+  isClubPresident: false,
+  isProjectLead: false,
+  order: 0,
+});
+
+const normalizeBoardRole = (value) => String(value || '')
+  .toLowerCase()
+  .normalize('NFD')
+  .replace(/[\u0300-\u036f]/g, '');
+
+const inferBoardPlacementFromMember = (member = {}) => {
+  const roleText = normalizeBoardRole(member.role);
+  const inferredClubPresident = Boolean(member.isClubPresident)
+    || roleText.includes('kulup baskani')
+    || roleText === 'baskan';
+
+  const inferredGroupType = inferredClubPresident
+    ? 'club'
+    : (member.groupType === 'project' || member.projectName ? 'project' : 'club');
+
+  const inferredProjectLead = inferredGroupType === 'project'
+    ? (Boolean(member.isProjectLead) || roleText.includes('proje baskani'))
+    : false;
+
+  return {
+    groupType: inferredGroupType,
+    isClubPresident: inferredClubPresident,
+    isProjectLead: inferredProjectLead,
+    projectName: inferredGroupType === 'project' ? (member.projectName || '') : '',
+    order: Number.isFinite(Number(member.order)) ? Number(member.order) : 0,
+  };
+};
+
+const createBoardFormFromMember = (member = {}) => {
+  const placement = inferBoardPlacementFromMember(member);
+  return {
+    ...createDefaultBoardForm(),
+    name: member.name || '',
+    role: member.role || '',
+    linkedin: member.linkedin && member.linkedin !== '#' ? member.linkedin : '',
+    github: member.github && member.github !== '#' ? member.github : '',
+    email: member.email || '',
+    ...placement,
+  };
+};
+
 function ClubInfoManagement() {
   const { navigator } = React.useContext(UNSAFE_NavigationContext);
   const [activeSection, setActiveSection] = useState('mission');
@@ -53,11 +108,40 @@ function ClubInfoManagement() {
 
   // Resim dosyalarını formData ile aktaracak stateler
   const [showBoardForm, setShowBoardForm] = useState(false);
-  const [boardForm, setBoardForm] = useState({ name: '', role: '', image: null, linkedin: '', github: '', email: '' });
+  const [boardForm, setBoardForm] = useState(createDefaultBoardForm);
   const [editingBoardMemberId, setEditingBoardMemberId] = useState(null);
   
   const [showProjectForm, setShowProjectForm] = useState(false);
   const [projectForm, setProjectForm] = useState({ title: '', desc: '', longDesc: '', image: null, tag: '', tech: '' });
+
+  const sortedBoardMembers = useMemo(() => {
+    return [...boardMembers].sort((a, b) => {
+      const aPlacement = inferBoardPlacementFromMember(a);
+      const bPlacement = inferBoardPlacementFromMember(b);
+
+      if (aPlacement.isClubPresident !== bPlacement.isClubPresident) {
+        return aPlacement.isClubPresident ? -1 : 1;
+      }
+
+      if (aPlacement.groupType !== bPlacement.groupType) {
+        return aPlacement.groupType === 'project' ? -1 : 1;
+      }
+
+      if (aPlacement.groupType === 'project') {
+        const projectCompare = String(aPlacement.projectName || '').localeCompare(String(bPlacement.projectName || ''), 'tr');
+        if (projectCompare !== 0) return projectCompare;
+
+        if (aPlacement.isProjectLead !== bPlacement.isProjectLead) {
+          return aPlacement.isProjectLead ? -1 : 1;
+        }
+      }
+
+      const orderCompare = Number(aPlacement.order || 0) - Number(bPlacement.order || 0);
+      if (orderCompare !== 0) return orderCompare;
+
+      return String(a.name || '').localeCompare(String(b.name || ''), 'tr');
+    });
+  }, [boardMembers]);
 
   useEffect(() => {
     fetchAllSections();
@@ -323,20 +407,13 @@ function ClubInfoManagement() {
   const resetBoardForm = () => {
     setShowBoardForm(false);
     setEditingBoardMemberId(null);
-    setBoardForm({ name: '', role: '', image: null, linkedin: '', github: '', email: '' });
+    setBoardForm(createDefaultBoardForm());
   };
 
   const handleEditBoardMember = (member) => {
     setEditingBoardMemberId(member._id);
     setShowBoardForm(true);
-    setBoardForm({
-      name: member.name || '',
-      role: member.role || '',
-      image: null,
-      linkedin: member.linkedin && member.linkedin !== '#' ? member.linkedin : '',
-      github: member.github && member.github !== '#' ? member.github : '',
-      email: member.email || '',
-    });
+    setBoardForm(createBoardFormFromMember(member));
   };
 
   const handleSaveBoardMember = async (e) => {
@@ -345,6 +422,13 @@ function ClubInfoManagement() {
       const fd = new FormData();
       fd.append('name', boardForm.name);
       fd.append('role', boardForm.role);
+      fd.append('groupType', boardForm.isClubPresident ? 'club' : boardForm.groupType);
+      fd.append('isClubPresident', String(Boolean(boardForm.isClubPresident)));
+      fd.append('isProjectLead', String(boardForm.groupType === 'project' && Boolean(boardForm.isProjectLead)));
+      fd.append('order', String(Number(boardForm.order || 0)));
+      if (boardForm.groupType === 'project' && !boardForm.isClubPresident) {
+        fd.append('projectName', boardForm.projectName || 'Proje Ekibi');
+      }
       if (boardForm.linkedin) fd.append('linkedin', boardForm.linkedin);
       if (boardForm.github) fd.append('github', boardForm.github);
       if (boardForm.email) fd.append('email', boardForm.email);
@@ -439,7 +523,7 @@ function ClubInfoManagement() {
              onClick={() => {
                setShowBoardForm(true);
                setEditingBoardMemberId(null);
-               setBoardForm({ name: '', role: '', image: null, linkedin: '', github: '', email: '' });
+               setBoardForm(createDefaultBoardForm());
              }}
              className="btn btn-primary"
            >
@@ -452,6 +536,70 @@ function ClubInfoManagement() {
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
               <input type="text" placeholder="Ad Soyad" style={{ padding: '8px', borderRadius: '6px', border: '1px solid #ccc' }} value={boardForm.name} onChange={e => setBoardForm({...boardForm, name: e.target.value})} required/>
               <input type="text" placeholder="Görevi (Başkan vb.)" style={{ padding: '8px', borderRadius: '6px', border: '1px solid #ccc' }} value={boardForm.role} onChange={e => setBoardForm({...boardForm, role: e.target.value})} required/>
+
+              <select
+                value={boardForm.groupType}
+                style={{ padding: '8px', borderRadius: '6px', border: '1px solid #ccc' }}
+                onChange={(e) => setBoardForm({
+                  ...boardForm,
+                  groupType: e.target.value,
+                  projectName: e.target.value === 'project' ? boardForm.projectName : '',
+                  isProjectLead: e.target.value === 'project' ? boardForm.isProjectLead : false,
+                })}
+                disabled={boardForm.isClubPresident}
+              >
+                <option value="club">Yonetim Kurulu</option>
+                <option value="project">Proje Ekibi</option>
+              </select>
+
+              <input
+                type="number"
+                min="0"
+                placeholder="Sira (kucukten buyuge)"
+                style={{ padding: '8px', borderRadius: '6px', border: '1px solid #ccc' }}
+                value={boardForm.order}
+                onChange={(e) => setBoardForm({ ...boardForm, order: e.target.value })}
+              />
+
+              <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', color: '#334155' }}>
+                <input
+                  type="checkbox"
+                  checked={Boolean(boardForm.isClubPresident)}
+                  onChange={(e) => {
+                    const checked = e.target.checked;
+                    setBoardForm({
+                      ...boardForm,
+                      isClubPresident: checked,
+                      groupType: checked ? 'club' : boardForm.groupType,
+                      projectName: checked ? '' : boardForm.projectName,
+                      isProjectLead: checked ? false : boardForm.isProjectLead,
+                    });
+                  }}
+                />
+                Kulup Baskani (her zaman ustte)
+              </label>
+
+              {boardForm.groupType === 'project' && !boardForm.isClubPresident ? (
+                <>
+                  <input
+                    type="text"
+                    placeholder="Proje Adi"
+                    style={{ padding: '8px', borderRadius: '6px', border: '1px solid #ccc' }}
+                    value={boardForm.projectName}
+                    onChange={(e) => setBoardForm({ ...boardForm, projectName: e.target.value })}
+                    required
+                  />
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', color: '#334155' }}>
+                    <input
+                      type="checkbox"
+                      checked={Boolean(boardForm.isProjectLead)}
+                      onChange={(e) => setBoardForm({ ...boardForm, isProjectLead: e.target.checked })}
+                    />
+                    Proje Baskani (proje icinde ilk sirada)
+                  </label>
+                </>
+              ) : null}
+
               <div style={{ gridColumn: '1 / -1', padding: '12px', background: 'white', borderRadius: '8px', border: '1px dashed #cbd5e1' }}>
                  <label style={{ display: 'block', fontSize: '13px', color: '#64748b', marginBottom: '8px' }}>
                    Profil Fotografi (Istege bagli)
@@ -471,7 +619,10 @@ function ClubInfoManagement() {
         )}
 
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '16px' }}>
-          {boardMembers.map(m => (
+          {sortedBoardMembers.map(m => {
+            const placement = inferBoardPlacementFromMember(m);
+
+            return (
             <div key={m._id} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '16px', border: '1px solid #e2e8f0', borderRadius: '12px', background: 'white', textAlign: 'center' }}>
                <img
                  src={m.img || '/placeholders/avatar-fallback.svg'}
@@ -484,12 +635,19 @@ function ClubInfoManagement() {
                />
                <h4 style={{ margin: '0 0 4px 0', fontSize: '15px' }}>{m.name}</h4>
                <p style={{ margin: '0 0 12px 0', fontSize: '13px', color: '#64748b' }}>{m.role}</p>
+               {placement.isClubPresident ? <small style={{ color: '#2563eb', marginBottom: '8px' }}>Kulup Baskani</small> : null}
+               {placement.groupType === 'project' ? (
+                 <small style={{ color: '#475569', marginBottom: '8px' }}>
+                   {placement.projectName || 'Proje Ekibi'} {placement.isProjectLead ? ' • Proje Baskani' : ''}
+                 </small>
+               ) : null}
                <div style={{ display: 'flex', width: '100%', gap: '8px', marginTop: 'auto' }}>
                  <button onClick={() => handleEditBoardMember(m)} className="btn btn-outline" style={{ color: '#2563eb', borderColor: '#2563eb', padding: '6px', width: '100%' }}><FiEdit2/> Duzenle</button>
                  <button onClick={() => handleDeleteBoardMember(m._id)} className="btn btn-outline" style={{ color: '#ef4444', borderColor: '#ef4444', padding: '6px', width: '100%' }}><FiTrash2/> Sil</button>
                </div>
             </div>
-          ))}
+            );
+          })}
         </div>
       </div>
     );

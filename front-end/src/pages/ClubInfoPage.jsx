@@ -21,7 +21,7 @@ import '../styles/ClubInfoPage.css';
 const NAV_ITEMS = [
   { id: 'mission', label: 'Misyonumuz & Vizyonumuz', icon: <FiTarget /> },
   { id: 'services', label: 'Hizmetler', icon: <FiBriefcase />, subItems: ['Uyelere sunulan imkanlar', 'Dis paydaslara saglanan katkilar'] },
-  { id: 'board', label: 'Yonetim Kurulu', icon: <FiUsers />, subItems: ['Gorev / rol bazli listeleme'] },
+  { id: 'board', label: 'Yonetim Kurulu', icon: <FiUsers />, subItems: ['Kulup baskani ustte', 'Proje ekipleri ve baskan siralamasi'] },
   { id: 'activities', label: 'Faaliyetlerimiz', icon: <FiBookOpen />, subItems: ['Egitimler', 'Seminerler', 'Etkinlikler'] },
   { id: 'projects', label: 'Projelerimiz', icon: <FiCpu />, subItems: ['Tum projeler ve yarisma calismalari'] },
   { id: 'membership', label: 'Uyelik & Katilim', icon: <FiUserPlus />, subItems: ['Kimler katilabilir?', 'Uyelerden beklentiler', 'Basvuru sureci'] },
@@ -66,6 +66,36 @@ const getProjectsFromSectionData = (sectionProjects) => {
   });
 
   return merged;
+};
+
+const normalizeBoardRole = (value) => String(value || '')
+  .toLowerCase()
+  .normalize('NFD')
+  .replace(/[\u0300-\u036f]/g, '');
+
+const inferBoardPlacement = (member = {}) => {
+  const roleText = normalizeBoardRole(member.role);
+  const isClubPresident = Boolean(member.isClubPresident)
+    || roleText.includes('kulup baskani')
+    || roleText === 'baskan';
+
+  const groupType = isClubPresident
+    ? 'club'
+    : (member.groupType === 'project' || member.projectName ? 'project' : 'club');
+
+  const isProjectLead = groupType === 'project'
+    ? (Boolean(member.isProjectLead) || roleText.includes('proje baskani'))
+    : false;
+
+  const order = Number.isFinite(Number(member.order)) ? Number(member.order) : 0;
+
+  return {
+    isClubPresident,
+    groupType,
+    isProjectLead,
+    projectName: groupType === 'project' ? (member.projectName || '') : '',
+    order,
+  };
 };
 
 function ClubInfoPage() {
@@ -140,20 +170,59 @@ function ClubInfoPage() {
     process: membershipRaw.process || '',
   };
 
-  const groupedBoardMembers = useMemo(() => {
-    return boardMembers.reduce((groups, member) => {
-      const role = member?.role || 'Belirtilmemis Rol';
-      if (!groups[role]) {
-        groups[role] = [];
-      }
-      groups[role].push(member);
-      return groups;
-    }, {});
-  }, [boardMembers]);
+  const boardStructure = useMemo(() => {
+    const enriched = boardMembers.map((member) => ({
+      ...member,
+      placement: inferBoardPlacement(member),
+    }));
 
-  const roleEntries = useMemo(() => {
-    return Object.entries(groupedBoardMembers).sort((a, b) => a[0].localeCompare(b[0], 'tr'));
-  }, [groupedBoardMembers]);
+    const sortedMembers = [...enriched].sort((a, b) => {
+      const aPlacement = a.placement;
+      const bPlacement = b.placement;
+
+      if (aPlacement.isClubPresident !== bPlacement.isClubPresident) {
+        return aPlacement.isClubPresident ? -1 : 1;
+      }
+
+      if (aPlacement.groupType !== bPlacement.groupType) {
+        return aPlacement.groupType === 'project' ? -1 : 1;
+      }
+
+      if (aPlacement.groupType === 'project') {
+        const projectCompare = String(aPlacement.projectName || '').localeCompare(String(bPlacement.projectName || ''), 'tr');
+        if (projectCompare !== 0) return projectCompare;
+
+        if (aPlacement.isProjectLead !== bPlacement.isProjectLead) {
+          return aPlacement.isProjectLead ? -1 : 1;
+        }
+      }
+
+      const orderCompare = aPlacement.order - bPlacement.order;
+      if (orderCompare !== 0) return orderCompare;
+
+      return String(a.name || '').localeCompare(String(b.name || ''), 'tr');
+    });
+
+    const clubPresident = sortedMembers.find((member) => member.placement.isClubPresident) || null;
+    const clubBoard = sortedMembers.filter((member) => !member.placement.isClubPresident && member.placement.groupType === 'club');
+
+    const projectsMap = new Map();
+    sortedMembers
+      .filter((member) => member.placement.groupType === 'project')
+      .forEach((member) => {
+        const projectName = member.placement.projectName || 'Proje Ekibi';
+        if (!projectsMap.has(projectName)) {
+          projectsMap.set(projectName, []);
+        }
+        projectsMap.get(projectName).push(member);
+      });
+
+    return {
+      clubPresident,
+      clubBoard,
+      projectTeams: Array.from(projectsMap.entries()),
+    };
+  }, [boardMembers]);
 
   const sectionProjects = useMemo(() => getProjectsFromSectionData(sections?.projects), [sections]);
   const projectContent = sectionProjects.length > 0
@@ -208,15 +277,40 @@ function ClubInfoPage() {
         );
 
       case 'board':
-        return roleEntries.length === 0 ? (
+        return !boardStructure.clubPresident && boardStructure.clubBoard.length === 0 && boardStructure.projectTeams.length === 0 ? (
           <p className="club-empty-text">Yonetim kurulu verisi henuz eklenmemis.</p>
         ) : (
           <div className="club-board-groups">
-            {roleEntries.map(([role, members]) => (
-              <section key={role} className="club-role-group">
-                <h3>{role}</h3>
+            {boardStructure.clubPresident ? (
+              <section className="club-role-group">
+                <h3>Kulup Baskani</h3>
+                <div className="club-president-wrap">
+                  <article key={boardStructure.clubPresident._id} className="club-member-card club-president-card">
+                    <img
+                      src={boardStructure.clubPresident.img || '/placeholders/avatar-fallback.svg'}
+                      alt={boardStructure.clubPresident.name}
+                      onError={(event) => {
+                        event.currentTarget.onerror = null;
+                        event.currentTarget.src = '/placeholders/avatar-fallback.svg';
+                      }}
+                    />
+                    <h4>{boardStructure.clubPresident.name}</h4>
+                    <p>{boardStructure.clubPresident.role}</p>
+                    <div className="club-member-links">
+                      {boardStructure.clubPresident.linkedin && boardStructure.clubPresident.linkedin !== '#' ? <a href={boardStructure.clubPresident.linkedin} target="_blank" rel="noreferrer"><FaLinkedin /></a> : null}
+                      {boardStructure.clubPresident.github && boardStructure.clubPresident.github !== '#' ? <a href={boardStructure.clubPresident.github} target="_blank" rel="noreferrer"><FaGithub /></a> : null}
+                      {boardStructure.clubPresident.email ? <a href={`mailto:${boardStructure.clubPresident.email}`}><FaEnvelope /></a> : null}
+                    </div>
+                  </article>
+                </div>
+              </section>
+            ) : null}
+
+            {boardStructure.clubBoard.length > 0 ? (
+              <section className="club-role-group">
+                <h3>Yonetim Kurulu</h3>
                 <div className="club-board-grid">
-                  {members.map((member) => (
+                  {boardStructure.clubBoard.map((member) => (
                     <article key={member._id} className="club-member-card">
                       <img
                         src={member.img || '/placeholders/avatar-fallback.svg'}
@@ -228,6 +322,34 @@ function ClubInfoPage() {
                       />
                       <h4>{member.name}</h4>
                       <p>{member.role}</p>
+                      <div className="club-member-links">
+                        {member.linkedin && member.linkedin !== '#' ? <a href={member.linkedin} target="_blank" rel="noreferrer"><FaLinkedin /></a> : null}
+                        {member.github && member.github !== '#' ? <a href={member.github} target="_blank" rel="noreferrer"><FaGithub /></a> : null}
+                        {member.email ? <a href={`mailto:${member.email}`}><FaEnvelope /></a> : null}
+                      </div>
+                    </article>
+                  ))}
+                </div>
+              </section>
+            ) : null}
+
+            {boardStructure.projectTeams.map(([projectName, members]) => (
+              <section key={projectName} className="club-role-group">
+                <h3>{projectName}</h3>
+                <div className="club-board-grid">
+                  {members.map((member, index) => (
+                    <article key={member._id} className={`club-member-card ${index === 0 ? 'club-project-lead-card' : ''}`}>
+                      <img
+                        src={member.img || '/placeholders/avatar-fallback.svg'}
+                        alt={member.name}
+                        onError={(event) => {
+                          event.currentTarget.onerror = null;
+                          event.currentTarget.src = '/placeholders/avatar-fallback.svg';
+                        }}
+                      />
+                      <h4>{member.name}</h4>
+                      <p>{member.role}</p>
+                      {member.placement?.isProjectLead ? <span className="club-project-lead-badge">Proje Baskani</span> : null}
                       <div className="club-member-links">
                         {member.linkedin && member.linkedin !== '#' ? <a href={member.linkedin} target="_blank" rel="noreferrer"><FaLinkedin /></a> : null}
                         {member.github && member.github !== '#' ? <a href={member.github} target="_blank" rel="noreferrer"><FaGithub /></a> : null}

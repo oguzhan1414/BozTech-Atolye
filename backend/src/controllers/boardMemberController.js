@@ -9,6 +9,104 @@ const {
   extractPublicIdFromCloudinaryUrl,
 } = require('../utils/mediaStorage');
 
+const normalizeText = (value) => String(value || '')
+  .toLowerCase()
+  .normalize('NFD')
+  .replace(/[\u0300-\u036f]/g, '');
+
+const parseBoolean = (value, fallback = false) => {
+  if (value === undefined || value === null || value === '') return fallback;
+  if (typeof value === 'boolean') return value;
+  const normalized = String(value).trim().toLowerCase();
+  return ['true', '1', 'yes', 'on'].includes(normalized);
+};
+
+const parseNumber = (value, fallback = 0) => {
+  const parsed = Number.parseInt(value, 10);
+  if (Number.isNaN(parsed)) return fallback;
+  return parsed;
+};
+
+const inferClubPresident = (member) => {
+  if (member?.isClubPresident) return true;
+  const role = normalizeText(member?.role);
+  return role.includes('kulup baskani') || role === 'baskan';
+};
+
+const inferProjectLead = (member) => {
+  if (member?.isProjectLead) return true;
+  const role = normalizeText(member?.role);
+  return role.includes('proje baskani');
+};
+
+const inferGroupType = (member) => {
+  if (member?.groupType === 'project' || member?.groupType === 'club') {
+    return member.groupType;
+  }
+  if (String(member?.projectName || '').trim()) return 'project';
+  return 'club';
+};
+
+const toBoardPayload = (body, defaults = {}) => {
+  const payload = { ...body };
+
+  const resolvedGroupType = (payload.groupType === 'project' || payload.groupType === 'club')
+    ? payload.groupType
+    : ((defaults.groupType === 'project' || String(defaults.projectName || '').trim()) ? 'project' : 'club');
+
+  const isClubPresident = parseBoolean(payload.isClubPresident, defaults.isClubPresident || false);
+  const isProjectLead = parseBoolean(payload.isProjectLead, defaults.isProjectLead || false);
+  const order = Math.max(0, parseNumber(payload.order, defaults.order || 0));
+
+  payload.groupType = isClubPresident ? 'club' : resolvedGroupType;
+  payload.projectName = payload.groupType === 'project'
+    ? String(payload.projectName || defaults.projectName || '').trim()
+    : '';
+  payload.isClubPresident = isClubPresident;
+  payload.isProjectLead = payload.groupType === 'project' ? isProjectLead : false;
+  payload.order = order;
+
+  if (payload.groupType === 'project' && !payload.projectName) {
+    throw new Error('Proje ekibi secildiginde proje adi zorunludur.');
+  }
+
+  return payload;
+};
+
+const sortBoardMembers = (members) => {
+  return [...members].sort((a, b) => {
+    const aClubPresident = inferClubPresident(a);
+    const bClubPresident = inferClubPresident(b);
+
+    if (aClubPresident !== bClubPresident) {
+      return aClubPresident ? -1 : 1;
+    }
+
+    const aGroupType = inferGroupType(a);
+    const bGroupType = inferGroupType(b);
+
+    if (aGroupType !== bGroupType) {
+      return aGroupType === 'project' ? -1 : 1;
+    }
+
+    if (aGroupType === 'project') {
+      const projectCompare = String(a.projectName || '').localeCompare(String(b.projectName || ''), 'tr');
+      if (projectCompare !== 0) return projectCompare;
+
+      const aLead = inferProjectLead(a);
+      const bLead = inferProjectLead(b);
+      if (aLead !== bLead) {
+        return aLead ? -1 : 1;
+      }
+    }
+
+    const orderCompare = parseNumber(a.order, 0) - parseNumber(b.order, 0);
+    if (orderCompare !== 0) return orderCompare;
+
+    return String(a.name || '').localeCompare(String(b.name || ''), 'tr');
+  });
+};
+
 const safeDeleteLocalFile = (filePath) => {
   if (!filePath) return;
   try {
@@ -45,8 +143,10 @@ exports.createBoardMember = async (req, res) => {
       }
     }
 
+    const payload = toBoardPayload(req.body);
+
     const member = await BoardMember.create({ 
-      ...req.body, 
+      ...payload,
       img: imgPath,
       imgKey,
       createdBy: req.user.id 
@@ -61,12 +161,13 @@ exports.createBoardMember = async (req, res) => {
 
 exports.getBoardMembers = async (req, res) => {
   try {
-    // order değerine göre küçükten büyüğe sıralayalım, eğer order yoksa createdAt'e göre
-    const members = await BoardMember.find().sort({ order: 1, createdAt: -1 });
+    const members = await BoardMember.find().sort({ createdAt: -1 });
+    const sortedMembers = sortBoardMembers(members);
+
     res.status(200).json({
       success: true,
-      count: members.length,
-      data: members.map((member) => serializeBoardMember(req, member))
+      count: sortedMembers.length,
+      data: sortedMembers.map((member) => serializeBoardMember(req, member))
     });
   } catch (err) {
     res.status(500).json({ success: false, message: 'Üyeler getirilemedi' });
@@ -93,6 +194,7 @@ exports.updateBoardMember = async (req, res) => {
     }
 
     let updateData = { ...req.body };
+    updateData = toBoardPayload(updateData, existingMember);
 
     if (req.file) {
       if (isCloudinaryEnabled()) {
