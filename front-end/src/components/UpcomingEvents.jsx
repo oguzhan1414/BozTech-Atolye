@@ -4,6 +4,8 @@ import { Link } from 'react-router-dom';
 import '../styles/UpcomingEventsWidget.css';
 
 function UpcomingEvents({ events = [] }) {
+  const previewEvents = events.slice(0, 3);
+
   return (
     <div className="section ue-section">
       <div className="container">
@@ -23,10 +25,10 @@ function UpcomingEvents({ events = [] }) {
         </div>
 
         <div className="ue-grid">
-          {events.length === 0 ? (
+          {previewEvents.length === 0 ? (
             <p className="ue-empty">Yaklasan etkinlik bulunmuyor.</p>
           ) : (
-            events.map((event) => {
+            previewEvents.map((event) => {
               const eventDate = new Date(event.date);
               const day = eventDate.getDate();
               const month = eventDate.toLocaleString('tr-TR', { month: 'short' });

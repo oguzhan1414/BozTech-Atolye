@@ -3,6 +3,8 @@ import { FiCalendar, FiBell } from 'react-icons/fi';
 import { Link } from 'react-router-dom';
 
 function Announcements({ announcements = [] }) {
+  const previewAnnouncements = announcements.slice(0, 3);
+
   return (
     <div id="duyurular" className="section announcements-section">
       <div className="container">
@@ -22,10 +24,10 @@ function Announcements({ announcements = [] }) {
         </div>
 
         <div className="announcements-grid">
-          {announcements.length === 0 ? (
+          {previewAnnouncements.length === 0 ? (
             <p className="announcement-empty">Henuz yayinlanmis duyuru bulunmuyor.</p>
           ) : (
-            announcements.map((announcement) => (
+            previewAnnouncements.map((announcement) => (
               <div 
                 key={announcement._id} 
                 className={`announcement-card type-${announcement.type?.toLowerCase() || 'genel'}`}

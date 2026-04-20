@@ -47,6 +47,24 @@ const createDefaultBoardForm = () => ({
   isProjectLead: false,
 });
 
+const createDefaultProjectForm = () => ({
+  title: '',
+  desc: '',
+  longDesc: '',
+  image: null,
+  tag: '',
+  tech: '',
+});
+
+const createProjectFormFromProject = (project = {}) => ({
+  ...createDefaultProjectForm(),
+  title: project.title || '',
+  desc: project.desc || '',
+  longDesc: project.longDesc || '',
+  tag: project.tag || '',
+  tech: Array.isArray(project.tech) ? project.tech.join(', ') : (project.tech || ''),
+});
+
 const normalizeBoardRole = (value) => String(value || '')
   .toLowerCase()
   .normalize('NFD')
@@ -109,7 +127,8 @@ function ClubInfoManagement() {
   const [editingBoardMemberId, setEditingBoardMemberId] = useState(null);
   
   const [showProjectForm, setShowProjectForm] = useState(false);
-  const [projectForm, setProjectForm] = useState({ title: '', desc: '', longDesc: '', image: null, tag: '', tech: '' });
+  const [projectForm, setProjectForm] = useState(createDefaultProjectForm);
+  const [editingProjectId, setEditingProjectId] = useState(null);
 
   const projectNameOptions = useMemo(() => {
     const names = projects
@@ -481,7 +500,19 @@ function ClubInfoManagement() {
   };
 
   // ----- PROJECT METHODS -----
-  const handleCreateProject = async (e) => {
+  const resetProjectForm = () => {
+    setShowProjectForm(false);
+    setEditingProjectId(null);
+    setProjectForm(createDefaultProjectForm());
+  };
+
+  const handleEditProject = (project) => {
+    setEditingProjectId(project._id);
+    setShowProjectForm(true);
+    setProjectForm(createProjectFormFromProject(project));
+  };
+
+  const handleSaveProject = async (e) => {
     e.preventDefault();
     try {
       const fd = new FormData();
@@ -492,15 +523,31 @@ function ClubInfoManagement() {
       if (projectForm.tech) fd.append('tech', projectForm.tech); // Controller da ayıracak (virgül formatında)
       if (projectForm.image) fd.append('image', projectForm.image);
 
-      const res = await projectService.create(fd);
+      const res = editingProjectId
+        ? await projectService.update(editingProjectId, fd)
+        : await projectService.create(fd);
+
       if (res.success) {
-        setProjects([res.data, ...projects]);
-        setShowProjectForm(false);
-        setProjectForm({ title: '', desc: '', longDesc: '', image: null, tag: '', tech: '' });
+        if (editingProjectId) {
+          setProjects((prev) => prev.map((project) => (
+            project._id === editingProjectId ? res.data : project
+          )));
+        } else {
+          setProjects((prev) => [res.data, ...prev]);
+        }
+
+        resetProjectForm();
       }
-      setFeedback({ type: 'success', message: 'Proje eklendi.' });
+
+      setFeedback({
+        type: 'success',
+        message: editingProjectId ? 'Proje guncellendi.' : 'Proje eklendi.'
+      });
     } catch(err) {
-      setFeedback({ type: 'error', message: 'Proje eklenemedi.' });
+      setFeedback({
+        type: 'error',
+        message: editingProjectId ? 'Proje guncellenemedi.' : 'Proje eklenemedi.'
+      });
     }
   };
 
@@ -509,6 +556,9 @@ function ClubInfoManagement() {
     try {
       await projectService.deleteProject(id);
       setProjects(projects.filter(p => p._id !== id));
+      if (editingProjectId === id) {
+        resetProjectForm();
+      }
       setFeedback({ type: 'success', message: 'Proje silindi.' });
     } catch(err) {
       setFeedback({ type: 'error', message: 'Proje silinemedi.' });
@@ -657,18 +707,34 @@ function ClubInfoManagement() {
     return (
       <div className="projects-management-section">
         <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '16px' }}>
-           <button onClick={() => setShowProjectForm(true)} className="btn btn-primary"><FiPlus/> Yeni Proje Ekle</button>
+           <button
+             onClick={() => {
+               setShowProjectForm(true);
+               setEditingProjectId(null);
+               setProjectForm(createDefaultProjectForm());
+             }}
+             className="btn btn-primary"
+           >
+             <FiPlus/> Yeni Proje Ekle
+           </button>
         </div>
         
         {showProjectForm && (
-          <form style={{ background: '#f8fafc', padding: '16px', borderRadius: '12px', marginBottom: '16px', border: '1px solid #e2e8f0' }} onSubmit={handleCreateProject}>
+          <form style={{ background: '#f8fafc', padding: '16px', borderRadius: '12px', marginBottom: '16px', border: '1px solid #e2e8f0' }} onSubmit={handleSaveProject}>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '12px' }}>
               <input type="text" placeholder="Proje Başlığı" style={{ padding: '8px', borderRadius: '6px', border: '1px solid #ccc' }} value={projectForm.title} onChange={e => setProjectForm({...projectForm, title: e.target.value})} required/>
               <input type="text" placeholder="Kategori (Tag) (Örn: Yapay Zeka)" style={{ padding: '8px', borderRadius: '6px', border: '1px solid #ccc' }} value={projectForm.tag} onChange={e => setProjectForm({...projectForm, tag: e.target.value})} required/>
               
               <div style={{ padding: '12px', background: 'white', borderRadius: '8px', border: '1px dashed #cbd5e1' }}>
-                 <label style={{ display: 'block', fontSize: '13px', color: '#64748b', marginBottom: '8px' }}>Proje Kapak Görseli Seçin</label>
-                 <input type="file" accept="image/*" onChange={e => setProjectForm({...projectForm, image: e.target.files[0]})} required/>
+                 <label style={{ display: 'block', fontSize: '13px', color: '#64748b', marginBottom: '8px' }}>
+                   {editingProjectId ? 'Proje Kapak Gorseli (Degistirmek icin secin)' : 'Proje Kapak Gorseli Secin'}
+                 </label>
+                 <input
+                   type="file"
+                   accept="image/*"
+                   onChange={e => setProjectForm({...projectForm, image: e.target.files?.[0] || null})}
+                   required={!editingProjectId}
+                 />
               </div>
 
               <input type="text" placeholder="Kısa Açıklama (Kart Gösterimi)" style={{ padding: '8px', borderRadius: '6px', border: '1px solid #ccc' }} value={projectForm.desc} onChange={e => setProjectForm({...projectForm, desc: e.target.value})} required/>
@@ -676,8 +742,8 @@ function ClubInfoManagement() {
               <input type="text" placeholder="Kullanılan Teknolojiler (Virgülle ayırın, Örn: Python, YOLO, React)" style={{ padding: '8px', borderRadius: '6px', border: '1px solid #ccc' }} value={projectForm.tech} onChange={e => setProjectForm({...projectForm, tech: e.target.value})} />
             </div>
             <div style={{ marginTop: '12px', display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
-              <button type="button" className="btn btn-outline" onClick={() => setShowProjectForm(false)}>İptal</button>
-              <button type="submit" className="btn btn-primary">Kaydet</button>
+              <button type="button" className="btn btn-outline" onClick={resetProjectForm}>İptal</button>
+              <button type="submit" className="btn btn-primary">{editingProjectId ? 'Guncelle' : 'Kaydet'}</button>
             </div>
           </form>
         )}
@@ -685,10 +751,21 @@ function ClubInfoManagement() {
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: '16px' }}>
           {projects.map(p => (
             <div key={p._id} style={{ display: 'flex', flexDirection: 'column', padding: '16px', border: '1px solid #e2e8f0', borderRadius: '12px', background: 'white' }}>
-               <img src={p.img} alt={p.title} style={{ width: '100%', height: '140px', borderRadius: '8px', objectFit: 'cover', marginBottom: '12px' }} />
+               <img
+                 src={p.img || '/placeholders/project-fallback.svg'}
+                 alt={p.title}
+                 style={{ width: '100%', height: '140px', borderRadius: '8px', objectFit: 'cover', marginBottom: '12px' }}
+                 onError={(event) => {
+                   event.currentTarget.onerror = null;
+                   event.currentTarget.src = '/placeholders/project-fallback.svg';
+                 }}
+               />
                <h4 style={{ margin: '0 0 8px 0', fontSize: '16px' }}>{p.title}</h4>
                <p style={{ margin: '0 0 12px 0', fontSize: '13px', color: '#64748b' }}>{p.tag} &middot; {p.tech?.join(', ')}</p>
-               <button onClick={() => handleDeleteProject(p._id)} className="btn btn-outline" style={{ color: '#ef4444', borderColor: '#ef4444', padding: '6px', width: '100%', marginTop: 'auto' }}><FiTrash2/> Sil</button>
+               <div style={{ display: 'flex', gap: '8px', marginTop: 'auto' }}>
+                 <button onClick={() => handleEditProject(p)} className="btn btn-outline" style={{ color: '#2563eb', borderColor: '#2563eb', padding: '6px', width: '100%' }}><FiEdit2/> Duzenle</button>
+                 <button onClick={() => handleDeleteProject(p._id)} className="btn btn-outline" style={{ color: '#ef4444', borderColor: '#ef4444', padding: '6px', width: '100%' }}><FiTrash2/> Sil</button>
+               </div>
             </div>
           ))}
         </div>

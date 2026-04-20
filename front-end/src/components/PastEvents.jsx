@@ -23,7 +23,7 @@ function PastEvents({ events = [] }) {
             <p>Geçmiş etkinlik bulunmuyor.</p>
           </div>
         ) : (
-          events.slice(0, 4).map((event) => {
+            events.slice(0, 3).map((event) => {
             const eventDate = new Date(event.date);
             const formattedDate = eventDate.toLocaleDateString('tr-TR', {
               day: '2-digit',

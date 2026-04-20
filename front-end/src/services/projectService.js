@@ -15,7 +15,7 @@ class ProjectService extends ApiService {
   }
 
   async update(id, data) {
-    // If future needs FormData update, add putFormData to ApiService
+    if (data instanceof FormData) return this.putFormData(id, data);
     return this.put(id, data);
   }
 
