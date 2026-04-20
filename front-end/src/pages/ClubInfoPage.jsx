@@ -330,8 +330,8 @@ function ClubInfoPage() {
               <section key={projectName} className="club-role-group">
                 <h3>{projectName}</h3>
                 <div className="club-board-grid">
-                  {members.map((member, index) => (
-                    <article key={member._id} className={`club-member-card ${index === 0 ? 'club-project-lead-card' : ''}`}>
+                  {members.map((member) => (
+                    <article key={member._id} className="club-member-card">
                       <img
                         src={member.img || '/placeholders/avatar-fallback.svg'}
                         alt={member.name}
@@ -342,7 +342,6 @@ function ClubInfoPage() {
                       />
                       <h4>{member.name}</h4>
                       <p>{member.role}</p>
-                      {member.placement?.isProjectLead ? <span className="club-project-lead-badge">Proje Baskani</span> : null}
                       <div className="club-member-links">
                         {member.linkedin && member.linkedin !== '#' ? <a href={member.linkedin} target="_blank" rel="noreferrer"><FaLinkedin /></a> : null}
                         {member.github && member.github !== '#' ? <a href={member.github} target="_blank" rel="noreferrer"><FaGithub /></a> : null}
