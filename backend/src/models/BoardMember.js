@@ -3,7 +3,8 @@ const mongoose = require('mongoose');
 const boardMemberSchema = new mongoose.Schema({
   name: { type: String, required: [true, 'Ad soyad zorunludur'], trim: true },
   role: { type: String, required: [true, 'Görev (Role) alanı zorunludur'] },
-  img: { type: String, required: [true, 'Görsel URL veya yolu zorunludur'] },
+  img: { type: String, default: '' },
+  imgKey: { type: String, default: '' },
   linkedin: { type: String, default: '#' },
   github: { type: String, default: '#' },
   email: { type: String, default: '' },

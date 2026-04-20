@@ -15,6 +15,7 @@ class BoardMemberService extends ApiService {
   }
 
   async update(id, data) {
+    if (data instanceof FormData) return this.putFormData(id, data);
     return this.put(id, data);
   }
 

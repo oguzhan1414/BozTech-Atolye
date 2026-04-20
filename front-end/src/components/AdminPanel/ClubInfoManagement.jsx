@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { FiPlus, FiTrash2, FiUsers, FiTarget, FiBriefcase, FiCalendar, FiFolder, FiUserPlus, FiSave, FiInstagram, FiLinkedin, FiYoutube } from 'react-icons/fi';
+import { FiPlus, FiTrash2, FiEdit2, FiUsers, FiTarget, FiBriefcase, FiCalendar, FiFolder, FiUserPlus, FiSave, FiInstagram, FiLinkedin, FiYoutube } from 'react-icons/fi';
 import { UNSAFE_NavigationContext, useBeforeUnload } from 'react-router-dom';
 import { clubInfoService } from '../../services/clubInfoService';
 import { projectService } from '../../services/projectService';
@@ -54,6 +54,7 @@ function ClubInfoManagement() {
   // Resim dosyalarını formData ile aktaracak stateler
   const [showBoardForm, setShowBoardForm] = useState(false);
   const [boardForm, setBoardForm] = useState({ name: '', role: '', image: null, linkedin: '', github: '', email: '' });
+  const [editingBoardMemberId, setEditingBoardMemberId] = useState(null);
   
   const [showProjectForm, setShowProjectForm] = useState(false);
   const [projectForm, setProjectForm] = useState({ title: '', desc: '', longDesc: '', image: null, tag: '', tech: '' });
@@ -319,7 +320,26 @@ function ClubInfoManagement() {
   };
 
   // ----- BOARD MEMBER METHODS -----
-  const handleCreateBoardMember = async (e) => {
+  const resetBoardForm = () => {
+    setShowBoardForm(false);
+    setEditingBoardMemberId(null);
+    setBoardForm({ name: '', role: '', image: null, linkedin: '', github: '', email: '' });
+  };
+
+  const handleEditBoardMember = (member) => {
+    setEditingBoardMemberId(member._id);
+    setShowBoardForm(true);
+    setBoardForm({
+      name: member.name || '',
+      role: member.role || '',
+      image: null,
+      linkedin: member.linkedin && member.linkedin !== '#' ? member.linkedin : '',
+      github: member.github && member.github !== '#' ? member.github : '',
+      email: member.email || '',
+    });
+  };
+
+  const handleSaveBoardMember = async (e) => {
     e.preventDefault();
     try {
       const fd = new FormData();
@@ -330,15 +350,37 @@ function ClubInfoManagement() {
       if (boardForm.email) fd.append('email', boardForm.email);
       if (boardForm.image) fd.append('image', boardForm.image);
 
-      const res = await boardMemberService.create(fd);
-      if (res.success) {
-        setBoardMembers([res.data, ...boardMembers]);
-        setShowBoardForm(false);
-        setBoardForm({ name: '', role: '', image: null, linkedin: '', github: '', email: '' });
+      let res;
+      if (editingBoardMemberId) {
+        res = await boardMemberService.update(editingBoardMemberId, fd);
+      } else {
+        res = await boardMemberService.create(fd);
       }
-      setFeedback({ type: 'success', message: 'Yonetim kurulu uyesi eklendi.' });
+
+      if (res.success) {
+        if (editingBoardMemberId) {
+          setBoardMembers((prev) => prev.map((member) => (
+            member._id === editingBoardMemberId ? res.data : member
+          )));
+        } else {
+          setBoardMembers((prev) => [res.data, ...prev]);
+        }
+        resetBoardForm();
+      }
+
+      setFeedback({
+        type: 'success',
+        message: editingBoardMemberId
+          ? 'Yonetim kurulu uyesi guncellendi.'
+          : 'Yonetim kurulu uyesi eklendi.'
+      });
     } catch(err) {
-      setFeedback({ type: 'error', message: 'Yonetim kurulu uyesi eklenemedi.' });
+      setFeedback({
+        type: 'error',
+        message: editingBoardMemberId
+          ? 'Yonetim kurulu uyesi guncellenemedi.'
+          : 'Yonetim kurulu uyesi eklenemedi.'
+      });
     }
   };
 
@@ -393,25 +435,37 @@ function ClubInfoManagement() {
     return (
       <div className="board-management-section">
         <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '16px' }}>
-           <button onClick={() => setShowBoardForm(true)} className="btn btn-primary"><FiPlus/> Yeni Üye Ekle</button>
+           <button
+             onClick={() => {
+               setShowBoardForm(true);
+               setEditingBoardMemberId(null);
+               setBoardForm({ name: '', role: '', image: null, linkedin: '', github: '', email: '' });
+             }}
+             className="btn btn-primary"
+           >
+             <FiPlus/> Yeni Üye Ekle
+           </button>
         </div>
         
         {showBoardForm && (
-          <form style={{ background: '#f8fafc', padding: '16px', borderRadius: '12px', marginBottom: '16px', border: '1px solid #e2e8f0' }} onSubmit={handleCreateBoardMember}>
+          <form style={{ background: '#f8fafc', padding: '16px', borderRadius: '12px', marginBottom: '16px', border: '1px solid #e2e8f0' }} onSubmit={handleSaveBoardMember}>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
               <input type="text" placeholder="Ad Soyad" style={{ padding: '8px', borderRadius: '6px', border: '1px solid #ccc' }} value={boardForm.name} onChange={e => setBoardForm({...boardForm, name: e.target.value})} required/>
               <input type="text" placeholder="Görevi (Başkan vb.)" style={{ padding: '8px', borderRadius: '6px', border: '1px solid #ccc' }} value={boardForm.role} onChange={e => setBoardForm({...boardForm, role: e.target.value})} required/>
               <div style={{ gridColumn: '1 / -1', padding: '12px', background: 'white', borderRadius: '8px', border: '1px dashed #cbd5e1' }}>
-                 <label style={{ display: 'block', fontSize: '13px', color: '#64748b', marginBottom: '8px' }}>Profil Fotoğrafı Seçin</label>
-                 <input type="file" accept="image/*" onChange={e => setBoardForm({...boardForm, image: e.target.files[0]})} required/>
+                 <label style={{ display: 'block', fontSize: '13px', color: '#64748b', marginBottom: '8px' }}>
+                   Profil Fotografi (Istege bagli)
+                 </label>
+                 <input type="file" accept="image/*" onChange={e => setBoardForm({...boardForm, image: e.target.files?.[0] || null})} />
+                 <small style={{ color: '#64748b' }}>Fotograf secmezseniz varsayilan avatar kullanilir.</small>
               </div>
               <input type="url" placeholder="LinkedIn Profil Linki (İsteğe Bağlı)" style={{ padding: '8px', borderRadius: '6px', border: '1px solid #ccc' }} value={boardForm.linkedin} onChange={e => setBoardForm({...boardForm, linkedin: e.target.value})} />
               <input type="url" placeholder="Github Profil Linki (İsteğe Bağlı)" style={{ padding: '8px', borderRadius: '6px', border: '1px solid #ccc' }} value={boardForm.github} onChange={e => setBoardForm({...boardForm, github: e.target.value})} />
               <input type="email" placeholder="E-Posta Adresi (İsteğe Bağlı)" style={{ padding: '8px', borderRadius: '6px', border: '1px solid #ccc', gridColumn: '1 / -1' }} value={boardForm.email} onChange={e => setBoardForm({...boardForm, email: e.target.value})} />
             </div>
             <div style={{ marginTop: '12px', display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
-              <button type="button" className="btn btn-outline" onClick={() => setShowBoardForm(false)}>İptal</button>
-              <button type="submit" className="btn btn-primary">Kaydet</button>
+              <button type="button" className="btn btn-outline" onClick={resetBoardForm}>İptal</button>
+              <button type="submit" className="btn btn-primary">{editingBoardMemberId ? 'Guncelle' : 'Kaydet'}</button>
             </div>
           </form>
         )}
@@ -419,10 +473,21 @@ function ClubInfoManagement() {
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '16px' }}>
           {boardMembers.map(m => (
             <div key={m._id} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '16px', border: '1px solid #e2e8f0', borderRadius: '12px', background: 'white', textAlign: 'center' }}>
-               <img src={m.img} alt={m.name} style={{ width: '80px', height: '80px', borderRadius: '50%', objectFit: 'cover', marginBottom: '12px', border: '2px solid #e2e8f0' }} />
+               <img
+                 src={m.img || '/placeholders/avatar-fallback.svg'}
+                 alt={m.name}
+                 style={{ width: '80px', height: '80px', borderRadius: '50%', objectFit: 'cover', marginBottom: '12px', border: '2px solid #e2e8f0' }}
+                 onError={(event) => {
+                   event.currentTarget.onerror = null;
+                   event.currentTarget.src = '/placeholders/avatar-fallback.svg';
+                 }}
+               />
                <h4 style={{ margin: '0 0 4px 0', fontSize: '15px' }}>{m.name}</h4>
                <p style={{ margin: '0 0 12px 0', fontSize: '13px', color: '#64748b' }}>{m.role}</p>
-               <button onClick={() => handleDeleteBoardMember(m._id)} className="btn btn-outline" style={{ color: '#ef4444', borderColor: '#ef4444', padding: '6px', width: '100%', marginTop: 'auto' }}><FiTrash2/> Sil</button>
+               <div style={{ display: 'flex', width: '100%', gap: '8px', marginTop: 'auto' }}>
+                 <button onClick={() => handleEditBoardMember(m)} className="btn btn-outline" style={{ color: '#2563eb', borderColor: '#2563eb', padding: '6px', width: '100%' }}><FiEdit2/> Duzenle</button>
+                 <button onClick={() => handleDeleteBoardMember(m._id)} className="btn btn-outline" style={{ color: '#ef4444', borderColor: '#ef4444', padding: '6px', width: '100%' }}><FiTrash2/> Sil</button>
+               </div>
             </div>
           ))}
         </div>
