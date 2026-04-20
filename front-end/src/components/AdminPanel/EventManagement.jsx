@@ -47,6 +47,10 @@ function EventManagement() {
     setShowModal(true);
   };
 
+  const handleView = (eventItem) => {
+    window.open(`/etkinlik/${eventItem._id}`, '_blank', 'noopener,noreferrer');
+  };
+
   const getErrorMessage = (apiError, fallbackMessage) => {
     if (apiError && typeof apiError.message === 'string') {
       return apiError.message;
@@ -206,7 +210,12 @@ function EventManagement() {
                   </td>
                   <td>
                     <div className="action-buttons">
-                      <button className="action-btn view-btn" title="Görüntüle">
+                      <button
+                        className="action-btn view-btn"
+                        onClick={() => handleView(item)}
+                        title="Görüntüle"
+                        type="button"
+                      >
                         <FiEye />
                       </button>
                       <button 

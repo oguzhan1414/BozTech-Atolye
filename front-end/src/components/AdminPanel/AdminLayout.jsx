@@ -1,32 +1,44 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
 import { 
   FiMenu, 
   FiX, 
   FiHome, 
   FiBell, 
-  FiMail, 
   FiCalendar, 
   FiImage, 
   FiUsers, 
   FiSettings,
   FiLogOut,
   FiInfo,
-  FiFileText,
-  FiSearch,
-  FiChevronDown
+  FiFileText
 } from 'react-icons/fi';
 import '../../styles/admin.css';
 
 function AdminLayout() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [adminName, setAdminName] = useState(localStorage.getItem('userName') || 'Yönetici');
   const location = useLocation();
   const navigate = useNavigate();
 
+  useEffect(() => {
+    const syncAdminName = () => {
+      setAdminName(localStorage.getItem('userName') || 'Yönetici');
+    };
+
+    window.addEventListener('admin-profile-updated', syncAdminName);
+    window.addEventListener('storage', syncAdminName);
+
+    return () => {
+      window.removeEventListener('admin-profile-updated', syncAdminName);
+      window.removeEventListener('storage', syncAdminName);
+    };
+  }, []);
+
   // Giriş yapmış kullanıcının bilgilerini LocalStorage'dan al
   const admin = {
-    name: localStorage.getItem('userName') || 'Yönetici',
+    name: adminName,
     email: 'Sistem Yöneticisi', // Dinamik olarak context/state'den de çekilebilir
     role: localStorage.getItem('userRole') === 'admin' ? 'Super Admin' : 'Editör',
     avatar: null

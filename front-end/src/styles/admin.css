@@ -527,6 +527,83 @@
 .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
 .form-actions { display: flex; justify-content: flex-end; gap: 12px; margin-top: 32px; padding-top: 24px; border-top: 1px solid var(--admin-border); }
 
+/* Settings */
+.settings-layout { display: flex; gap: 24px; }
+.settings-sidebar { width: 240px; flex-shrink: 0; }
+.settings-sidebar ul { list-style: none; padding: 0; margin: 0; }
+.settings-sidebar li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: var(--transition);
+  color: #64748b;
+  margin-bottom: 8px;
+  border: 1px solid transparent;
+  font-weight: 600;
+}
+.settings-sidebar li:hover {
+  background: #ffffff;
+  border-color: var(--admin-border);
+  color: var(--admin-text);
+}
+.settings-sidebar li.active {
+  color: #ffffff;
+  background: var(--admin-primary);
+  box-shadow: 0 6px 14px rgba(147, 51, 234, 0.22);
+}
+.settings-content {
+  flex: 1;
+  border: 1px solid var(--admin-border);
+  border-radius: var(--radius-lg);
+  background: #f8fafc;
+  padding: 22px;
+}
+.settings-header { margin-bottom: 16px; }
+.settings-header h3 { margin: 0; font-size: 20px; color: var(--admin-text); }
+.settings-note-card {
+  border: 1px solid #dbeafe;
+  background: #eff6ff;
+  color: #1e3a8a;
+  border-radius: var(--radius-md);
+  padding: 12px 14px;
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  margin-bottom: 16px;
+}
+.settings-note-card p { margin: 0; font-size: 14px; }
+.settings-helper-text {
+  margin-top: 8px;
+  display: block;
+  color: #64748b;
+  font-size: 12px;
+}
+.settings-info-grid {
+  margin-top: 14px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+.settings-info-item {
+  border: 1px solid var(--admin-border);
+  background: #ffffff;
+  border-radius: var(--radius-md);
+  padding: 12px;
+}
+.settings-info-item span {
+  display: block;
+  color: #64748b;
+  font-size: 12px;
+  margin-bottom: 6px;
+}
+.settings-info-item strong {
+  font-size: 14px;
+  color: var(--admin-text);
+}
+
 /* Custom: ClubInfo & Permissions */
 .club-info-layout { display: flex; gap: 32px; }
 .info-sidebar { width: 250px; flex-shrink: 0; }
@@ -591,6 +668,11 @@
   .info-sidebar li { white-space: nowrap; margin-bottom: 0; }
   .club-info-editor-grid { grid-template-columns: 1fr; }
   .section-preview-card { position: static; }
+  .settings-layout { flex-direction: column; }
+  .settings-sidebar { width: 100%; }
+  .settings-sidebar ul { display: flex; gap: 8px; }
+  .settings-sidebar li { margin-bottom: 0; }
+  .settings-info-grid { grid-template-columns: 1fr; }
 }
 @media (max-width: 768px) {
   .admin-sidebar { width: 0; transform: translateX(-100%); }
