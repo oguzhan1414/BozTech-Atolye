@@ -262,8 +262,11 @@ function EventModal({ event, onClose, onSave }) {
     date: event?.date ? new Date(event.date).toISOString().split('T')[0] : '',
     time: event?.time || '',
     location: event?.location || '',
+    participants: event?.participants ?? 0,
     description: event?.description || ''
   });
+  const [imageFile, setImageFile] = useState(null);
+  const [imagePreview, setImagePreview] = useState(event?.image || '');
   const [saving, setSaving] = useState(false);
   const [isDirty, setIsDirty] = useState(false);
   const {
@@ -286,10 +289,36 @@ function EventModal({ event, onClose, onSave }) {
     });
   };
 
+  const handleImageChange = (selectedFile) => {
+    setIsDirty(true);
+    setImageFile(selectedFile || null);
+
+    if (!selectedFile) {
+      setImagePreview(event?.image || '');
+      return;
+    }
+
+    const nextPreview = URL.createObjectURL(selectedFile);
+    setImagePreview(nextPreview);
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setSaving(true);
-    await onSave(formData);
+
+    const payload = new FormData();
+    payload.append('title', formData.title);
+    payload.append('category', formData.category);
+    payload.append('date', formData.date);
+    payload.append('time', formData.time);
+    payload.append('location', formData.location);
+    payload.append('participants', String(formData.participants ?? 0));
+    payload.append('description', formData.description);
+    if (imageFile) {
+      payload.append('image', imageFile);
+    }
+
+    await onSave(payload);
     setIsDirty(false);
     setSaving(false);
   };
@@ -363,6 +392,39 @@ function EventModal({ event, onClose, onSave }) {
                 disabled={saving}
               />
             </div>
+            <div className="form-group">
+              <label>Katilimci Sayisi</label>
+              <input
+                type="number"
+                min="0"
+                value={formData.participants}
+                onChange={(e) => handleFieldChange('participants', e.target.value)}
+                disabled={saving}
+              />
+            </div>
+          </div>
+
+          <div className="form-group">
+            <label>Etkinlik Gorseli (Galeri disi)</label>
+            <input
+              type="file"
+              accept="image/*"
+              onChange={(e) => handleImageChange(e.target.files?.[0])}
+              disabled={saving}
+            />
+            {imagePreview ? (
+              <div className="event-image-preview-wrap">
+                <img
+                  src={imagePreview}
+                  alt="Etkinlik onizleme"
+                  className="event-image-preview"
+                  onError={(imgEvent) => {
+                    imgEvent.currentTarget.onerror = null;
+                    imgEvent.currentTarget.src = '/placeholders/image-fallback.svg';
+                  }}
+                />
+              </div>
+            ) : null}
           </div>
 
           <div className="form-group">

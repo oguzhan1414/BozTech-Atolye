@@ -67,6 +67,18 @@ class ApiService {
     }
   }
 
+  // FormData ile PUT (dosya guncelleme icin)
+  async putFormData(id, data, path = '') {
+    try {
+      const response = await axiosInstance.put(`/${this.resource}/${id}${path}`, data, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
+      return response.data;
+    } catch (error) {
+      throw this.handleError(error);
+    }
+  }
+
   // Hata yönetimi
   handleError(error) {
     if (error.response) {

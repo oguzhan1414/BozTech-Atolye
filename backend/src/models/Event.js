@@ -14,6 +14,10 @@ const eventSchema = new mongoose.Schema({
     type: Date, // Saat bilgisini de burada tutabilirsin
     required: [true, 'Etkinlik tarihi gereklidir']
   },
+  time: {
+    type: String,
+    required: [true, 'Etkinlik saati gereklidir']
+  },
   location: {
     type: String,
     required: [true, 'Etkinlik mekanı belirtilmelidir']
@@ -25,7 +29,16 @@ const eventSchema = new mongoose.Schema({
   },
   image: {
     type: String,
-    default: 'default-event.jpg' // Boş kalmasın, UI bozulmaz
+    default: ''
+  },
+  imageKey: {
+    type: String,
+    default: ''
+  },
+  participants: {
+    type: Number,
+    default: 0,
+    min: [0, 'Katilimci sayisi negatif olamaz']
   },
   isActive: {
     type: Boolean,

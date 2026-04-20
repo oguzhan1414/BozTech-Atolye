@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { eventService } from '../services/eventService';
-import { FaArrowLeft, FaClock, FaMapMarkerAlt, FaCalendarAlt, FaTag, FaRegBell } from 'react-icons/fa';
+import { FaArrowLeft, FaClock, FaMapMarkerAlt, FaCalendarAlt, FaTag, FaRegBell, FaUsers } from 'react-icons/fa';
 import '../styles/UpcomingEventsDetails.css';
 
 function UpcomingEventsDetails() {
@@ -63,6 +63,17 @@ function UpcomingEventsDetails() {
 
         {/* Detay Kartı */}
         <div className="event-detail-card">
+          <div className="event-cover">
+            <img
+              src={event.image || '/placeholders/image-fallback.svg'}
+              alt={event.title || 'Etkinlik gorseli'}
+              onError={(imgEvent) => {
+                imgEvent.currentTarget.onerror = null;
+                imgEvent.currentTarget.src = '/placeholders/image-fallback.svg';
+              }}
+            />
+          </div>
+
           <div className="event-detail-header">
             <div className="event-meta">
               <span className="detail-meta-type">
@@ -82,6 +93,10 @@ function UpcomingEventsDetails() {
               <div className="stat-item">
                 <FaMapMarkerAlt size={16} />
                 <span>{event.location}</span>
+              </div>
+              <div className="stat-item">
+                <FaUsers size={16} />
+                <span>{event.participants || 0} Katilimci</span>
               </div>
             </div>
           </div>

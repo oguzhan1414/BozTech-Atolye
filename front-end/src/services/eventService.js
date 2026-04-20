@@ -36,7 +36,9 @@ export const eventService = {
   // Yeni etkinlik ekle
   create: async (data) => {
     try {
-      const response = await eventApi.post(data);
+      const response = data instanceof FormData
+        ? await eventApi.postFormData(data)
+        : await eventApi.post(data);
       return response;
     } catch (error) {
       throw error;
@@ -46,7 +48,9 @@ export const eventService = {
   // Etkinlik güncelle
   update: async (id, data) => {
     try {
-      const response = await eventApi.put(id, data);
+      const response = data instanceof FormData
+        ? await eventApi.putFormData(id, data)
+        : await eventApi.put(id, data);
       return response;
     } catch (error) {
       throw error;

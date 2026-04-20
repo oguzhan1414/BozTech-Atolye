@@ -1,5 +1,5 @@
 import React from 'react';
-import { FiCalendar, FiClock, FiMapPin } from 'react-icons/fi';
+import { FiCalendar, FiClock, FiMapPin, FiUsers } from 'react-icons/fi';
 import { Link } from 'react-router-dom';
 import '../styles/UpcomingEventsWidget.css';
 
@@ -39,6 +39,17 @@ function UpcomingEvents({ events = [] }) {
                   </div>
                   
                   <div className="ue-content">
+                    <div className="ue-thumb">
+                      <img
+                        src={event.image || '/placeholders/image-fallback.svg'}
+                        alt={event.title || 'Etkinlik gorseli'}
+                        onError={(imgEvent) => {
+                          imgEvent.currentTarget.onerror = null;
+                          imgEvent.currentTarget.src = '/placeholders/image-fallback.svg';
+                        }}
+                      />
+                    </div>
+
                     <div className="ue-header">
                       <h3 className="ue-title">{event.title}</h3>
                       <span className="ue-category">{event.category}</span>
@@ -54,6 +65,10 @@ function UpcomingEvents({ events = [] }) {
                       <div className="ue-detail-item">
                         <FiMapPin size={14} />
                         <span>{event.location}</span>
+                      </div>
+                      <div className="ue-detail-item">
+                        <FiUsers size={14} />
+                        <span>{event.participants || 0} Katilimci</span>
                       </div>
                     </div>
                     

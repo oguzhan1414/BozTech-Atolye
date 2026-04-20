@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { body } = require('express-validator');
+const upload = require('../midleware/upload');
 const {
   getEvents,
   getEventById,
@@ -18,6 +19,8 @@ const eventValidation = [
   body('date').isISO8601().withMessage('Geçerli bir tarih girin'),
   body('time').notEmpty().withMessage('Saat gereklidir'),
   body('location').notEmpty().withMessage('Konum gereklidir'),
+  body('participants').optional({ values: 'falsy' }).isInt({ min: 0 })
+    .withMessage('Katilimci sayisi 0 veya daha buyuk bir tam sayi olmalidir'),
   body('category').isIn(['Konferans', 'Workshop', 'Meetup', 'Seminer', 'Sosyal'])
     .withMessage('Geçerli bir kategori seçin')
 ];
@@ -33,6 +36,7 @@ router.get('/admin/all', protect, checkPermission('events'), getAllEventsAdmin);
 router.post('/', 
   protect, 
   checkPermission('events'), 
+  upload.single('image'),
   eventValidation, 
   createEvent
 );
@@ -40,6 +44,7 @@ router.post('/',
 router.put('/:id', 
   protect, 
   checkPermission('events'), 
+  upload.single('image'),
   eventValidation, 
   updateEvent
 );

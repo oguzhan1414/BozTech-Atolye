@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { FiCalendar, FiClock, FiMapPin } from 'react-icons/fi';
+import { FiCalendar, FiClock, FiMapPin, FiUsers } from 'react-icons/fi';
 import { eventService } from '../services/eventService';
 import '../styles/ArchivePages.css';
 
@@ -68,6 +68,18 @@ function EventsPage() {
 
               return (
                 <article key={event._id} className="archive-card">
+                  <div className="archive-event-image-wrap">
+                    <img
+                      src={event.image || '/placeholders/image-fallback.svg'}
+                      alt={event.title || 'Etkinlik gorseli'}
+                      className="archive-event-image"
+                      onError={(imgEvent) => {
+                        imgEvent.currentTarget.onerror = null;
+                        imgEvent.currentTarget.src = '/placeholders/image-fallback.svg';
+                      }}
+                    />
+                  </div>
+
                   <div className="archive-card-head">
                     <span className={`archive-pill ${isPast ? 'archive-past' : 'archive-upcoming'}`}>
                       {isPast ? 'Gecmis' : 'Yaklasan'}
@@ -82,6 +94,7 @@ function EventsPage() {
                   <div className="archive-meta-row">
                     <span><FiClock size={13} /> {event.time || '-'}</span>
                     <span><FiMapPin size={13} /> {event.location || '-'}</span>
+                    <span><FiUsers size={13} /> {event.participants || 0} Katilimci</span>
                   </div>
                   <Link to={`/etkinlik/${event._id}`} className="archive-link">Detayı Aç</Link>
                 </article>
