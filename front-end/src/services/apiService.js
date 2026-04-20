@@ -45,6 +45,16 @@ class ApiService {
     }
   }
 
+  // Belirli bir alt path'e PUT isteği
+  async putByPath(path = '', data = {}) {
+    try {
+      const response = await axiosInstance.put(`/${this.resource}${path}`, data);
+      return response.data;
+    } catch (error) {
+      throw this.handleError(error);
+    }
+  }
+
   // DELETE isteği
   async delete(id, params = {}) {
     try {

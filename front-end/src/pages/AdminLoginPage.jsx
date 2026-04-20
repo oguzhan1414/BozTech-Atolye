@@ -24,9 +24,16 @@ function AdminLoginPage() {
                 localStorage.setItem('userRole', response.user.role);
                 localStorage.setItem('userName', response.user.name);
                 localStorage.setItem('userPermissions', JSON.stringify(response.user.permissions || {}));
-                localStorage.setItem('userMustChangePassword', String(Boolean(response.user.mustChangePassword)));
+                const needsPasswordChange = Boolean(response.user.mustChangePassword);
+                localStorage.setItem('userMustChangePassword', String(needsPasswordChange));
 
-                navigate('/admin/panel');
+                if (needsPasswordChange) {
+                    sessionStorage.setItem('tempLoginPassword', password);
+                    navigate('/admin/panel/settings?tab=security');
+                } else {
+                    sessionStorage.removeItem('tempLoginPassword');
+                    navigate('/admin/panel');
+                }
             }
         } catch (err) {
             setError(err.message || 'Giriş yapılırken bir hata oluştu');

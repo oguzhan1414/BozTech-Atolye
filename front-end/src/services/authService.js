@@ -26,7 +26,7 @@ export const authService = {
   // Şifre değiştir
   changePassword: async (currentPassword, newPassword) => {
     try {
-      const response = await authApi.put('/change-password', { currentPassword, newPassword });
+      const response = await authApi.putByPath('/change-password', { currentPassword, newPassword });
       return response;
     } catch (error) {
       throw error;
@@ -48,7 +48,9 @@ export const authService = {
     localStorage.removeItem('token');
     localStorage.removeItem('userRole');
     localStorage.removeItem('userName');
+    localStorage.removeItem('userPermissions');
     localStorage.removeItem('userMustChangePassword');
+    sessionStorage.removeItem('tempLoginPassword');
     window.location.href = '/admin';
   }
 };

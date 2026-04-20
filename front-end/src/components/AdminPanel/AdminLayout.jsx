@@ -79,8 +79,11 @@ function AdminLayout() {
   const handleLogout = () => {
     // Logout işlemi
     localStorage.removeItem('token');
+    localStorage.removeItem('userRole');
+    localStorage.removeItem('userName');
     localStorage.removeItem('userPermissions');
     localStorage.removeItem('userMustChangePassword');
+    sessionStorage.removeItem('tempLoginPassword');
     navigate('/');
   };
 

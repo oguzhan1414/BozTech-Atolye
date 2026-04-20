@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { FiSave, FiSettings, FiUser, FiShield, FiLogOut, FiLock } from 'react-icons/fi';
+import { FiSave, FiSettings, FiUser, FiShield, FiLogOut, FiLock, FiEye, FiEyeOff } from 'react-icons/fi';
 import { authService } from '../../services/authService';
 import UnsavedChangesModal from './UnsavedChangesModal';
 import { useUnsavedChangesPrompt } from '../../hooks/useUnsavedChangesPrompt';
@@ -12,6 +12,7 @@ function Settings() {
     const queryTab = new URLSearchParams(search).get('tab');
     return ['profile', 'session', 'security'].includes(queryTab) ? queryTab : 'profile';
   };
+  const temporaryPassword = sessionStorage.getItem('tempLoginPassword') || '';
 
   const [activeTab, setActiveTab] = useState(() => resolveTabFromQuery(location.search));
   const [savedName, setSavedName] = useState(localStorage.getItem('userName') || 'Yonetici');
@@ -23,6 +24,9 @@ function Settings() {
   });
   const [changingPassword, setChangingPassword] = useState(false);
   const [feedback, setFeedback] = useState(null);
+  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const profileDirty = useMemo(() => profileName.trim() !== savedName.trim(), [profileName, savedName]);
   const passwordDirty = useMemo(() => {
@@ -49,6 +53,16 @@ function Settings() {
     const tabFromQuery = resolveTabFromQuery(location.search);
     setActiveTab((prev) => (prev === tabFromQuery ? prev : tabFromQuery));
   }, [location.search]);
+
+  useEffect(() => {
+    if (!mustChangePassword) return;
+    if (!temporaryPassword) return;
+
+    setPasswordForm((prev) => ({
+      ...prev,
+      currentPassword: prev.currentPassword || temporaryPassword,
+    }));
+  }, [mustChangePassword, temporaryPassword]);
 
   const handleTabChange = (nextTab) => {
     if (nextTab === activeTab) return;
@@ -104,6 +118,7 @@ function Settings() {
       await authService.changePassword(passwordForm.currentPassword, passwordForm.newPassword);
       setPasswordForm({ currentPassword: '', newPassword: '', confirmPassword: '' });
       localStorage.setItem('userMustChangePassword', 'false');
+      sessionStorage.removeItem('tempLoginPassword');
       setFeedback({ type: 'success', message: 'Sifreniz basariyla degistirildi.' });
     } catch (apiError) {
       setFeedback({ type: 'error', message: apiError?.message || 'Sifre degistirilirken bir hata olustu.' });
@@ -215,37 +230,112 @@ function Settings() {
 
                 <div className="form-group">
                   <label>Mevcut Sifre</label>
-                  <input
-                    type="password"
-                    value={passwordForm.currentPassword}
-                    onChange={(e) => handlePasswordFieldChange('currentPassword', e.target.value)}
-                    required
-                    disabled={changingPassword}
-                  />
+                  <div style={{ position: 'relative' }}>
+                    <input
+                      type={showCurrentPassword ? 'text' : 'password'}
+                      value={passwordForm.currentPassword}
+                      onChange={(e) => handlePasswordFieldChange('currentPassword', e.target.value)}
+                      required
+                      disabled={changingPassword}
+                      style={{ paddingRight: '42px' }}
+                    />
+                    <button
+                      type="button"
+                      aria-label="Mevcut sifreyi goster/gizle"
+                      onClick={() => setShowCurrentPassword((prev) => !prev)}
+                      style={{
+                        position: 'absolute',
+                        right: '10px',
+                        top: '50%',
+                        transform: 'translateY(-50%)',
+                        border: 'none',
+                        background: 'transparent',
+                        color: '#64748b',
+                        cursor: 'pointer',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        padding: 0,
+                      }}
+                    >
+                      {showCurrentPassword ? <FiEyeOff /> : <FiEye />}
+                    </button>
+                  </div>
+                  {mustChangePassword && temporaryPassword ? (
+                    <small className="settings-helper-text">Mevcut sifre alanina gecici sifre otomatik getirildi.</small>
+                  ) : null}
                 </div>
 
                 <div className="form-group">
                   <label>Yeni Sifre</label>
-                  <input
-                    type="password"
-                    value={passwordForm.newPassword}
-                    onChange={(e) => handlePasswordFieldChange('newPassword', e.target.value)}
-                    minLength={6}
-                    required
-                    disabled={changingPassword}
-                  />
+                  <div style={{ position: 'relative' }}>
+                    <input
+                      type={showNewPassword ? 'text' : 'password'}
+                      value={passwordForm.newPassword}
+                      onChange={(e) => handlePasswordFieldChange('newPassword', e.target.value)}
+                      minLength={6}
+                      required
+                      disabled={changingPassword}
+                      style={{ paddingRight: '42px' }}
+                    />
+                    <button
+                      type="button"
+                      aria-label="Yeni sifreyi goster/gizle"
+                      onClick={() => setShowNewPassword((prev) => !prev)}
+                      style={{
+                        position: 'absolute',
+                        right: '10px',
+                        top: '50%',
+                        transform: 'translateY(-50%)',
+                        border: 'none',
+                        background: 'transparent',
+                        color: '#64748b',
+                        cursor: 'pointer',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        padding: 0,
+                      }}
+                    >
+                      {showNewPassword ? <FiEyeOff /> : <FiEye />}
+                    </button>
+                  </div>
                 </div>
 
                 <div className="form-group">
                   <label>Yeni Sifre (Tekrar)</label>
-                  <input
-                    type="password"
-                    value={passwordForm.confirmPassword}
-                    onChange={(e) => handlePasswordFieldChange('confirmPassword', e.target.value)}
-                    minLength={6}
-                    required
-                    disabled={changingPassword}
-                  />
+                  <div style={{ position: 'relative' }}>
+                    <input
+                      type={showConfirmPassword ? 'text' : 'password'}
+                      value={passwordForm.confirmPassword}
+                      onChange={(e) => handlePasswordFieldChange('confirmPassword', e.target.value)}
+                      minLength={6}
+                      required
+                      disabled={changingPassword}
+                      style={{ paddingRight: '42px' }}
+                    />
+                    <button
+                      type="button"
+                      aria-label="Yeni sifre tekrarini goster/gizle"
+                      onClick={() => setShowConfirmPassword((prev) => !prev)}
+                      style={{
+                        position: 'absolute',
+                        right: '10px',
+                        top: '50%',
+                        transform: 'translateY(-50%)',
+                        border: 'none',
+                        background: 'transparent',
+                        color: '#64748b',
+                        cursor: 'pointer',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        padding: 0,
+                      }}
+                    >
+                      {showConfirmPassword ? <FiEyeOff /> : <FiEye />}
+                    </button>
+                  </div>
                 </div>
 
                 <div className="form-actions" style={{ marginTop: 0 }}>
