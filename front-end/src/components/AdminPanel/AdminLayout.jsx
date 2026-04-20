@@ -94,7 +94,7 @@ function AdminLayout() {
         <div className="sidebar-header">
           <div className="sidebar-logo">
             <div className="logo-icon">T</div>
-            {!sidebarCollapsed && <span>Tech Club Admin</span>}
+            {!sidebarCollapsed && <span>BozTech</span>}
           </div>
           <button 
             className="sidebar-toggle"
