@@ -1,10 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
 import {
   FiBookOpen,
   FiBriefcase,
-  FiCpu,
-  FiExternalLink,
   FiFlag,
   FiLayers,
   FiMapPin,
@@ -15,7 +12,6 @@ import {
 import { FaEnvelope, FaGithub, FaLinkedin } from 'react-icons/fa';
 import { boardMemberService } from '../services/boardMemberService';
 import { clubInfoService } from '../services/clubInfoService';
-import { projectService } from '../services/projectService';
 import '../styles/ClubInfoPage.css';
 
 const NAV_ITEMS = [
@@ -23,7 +19,6 @@ const NAV_ITEMS = [
   { id: 'services', label: 'Hizmetler', icon: <FiBriefcase />, subItems: ['Uyelere sunulan imkanlar', 'Dis paydaslara saglanan katkilar'] },
   { id: 'board', label: 'Yonetim Kurulu', icon: <FiUsers />, subItems: ['Kulup baskani ustte', 'Proje ekipleri ve baskan siralamasi'] },
   { id: 'activities', label: 'Faaliyetlerimiz', icon: <FiBookOpen />, subItems: ['Egitimler', 'Seminerler', 'Etkinlikler'] },
-  { id: 'projects', label: 'Projelerimiz', icon: <FiCpu />, subItems: ['Tum projeler ve yarisma calismalari'] },
   { id: 'membership', label: 'Uyelik & Katilim', icon: <FiUserPlus />, subItems: ['Kimler katilabilir?', 'Uyelerden beklentiler', 'Basvuru sureci'] },
 ];
 
@@ -34,39 +29,6 @@ const getSectionIcon = (categoryName) => {
   return <FiMapPin />;
 };
 
-const normalizeProjectEntry = (item) => {
-  if (typeof item === 'string') {
-    return { title: item, description: '', tag: '', _id: null, award: '', year: '' };
-  }
-
-  return {
-    title: item?.title || item?.name || 'Isimsiz Kayit',
-    description: item?.description || item?.desc || item?.summary || '',
-    tag: item?.tag || item?.category || '',
-    _id: item?._id || item?.projectId || null,
-    award: item?.award || item?.ranking || '',
-    year: item?.year || '',
-  };
-};
-
-const getProjectsFromSectionData = (sectionProjects) => {
-  if (!sectionProjects || typeof sectionProjects !== 'object') {
-    return [];
-  }
-
-  if (Array.isArray(sectionProjects.items)) {
-    return sectionProjects.items.map(normalizeProjectEntry);
-  }
-
-  const merged = [];
-  ['ongoing', 'completed', 'competitions'].forEach((key) => {
-    if (Array.isArray(sectionProjects[key])) {
-      merged.push(...sectionProjects[key].map(normalizeProjectEntry));
-    }
-  });
-
-  return merged;
-};
 
 const normalizeBoardRole = (value) => String(value || '')
   .toLowerCase()
@@ -98,7 +60,6 @@ function ClubInfoPage() {
   const [activeSection, setActiveSection] = useState('mission');
   const [sections, setSections] = useState({});
   const [boardMembers, setBoardMembers] = useState([]);
-  const [projects, setProjects] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
@@ -106,10 +67,9 @@ function ClubInfoPage() {
     const fetchPageData = async () => {
       try {
         setLoading(true);
-        const [clubInfoRes, boardRes, projectRes] = await Promise.all([
+        const [clubInfoRes, boardRes] = await Promise.all([
           clubInfoService.getAll(),
           boardMemberService.getAll(),
-          projectService.getAll()
         ]);
 
         if (clubInfoRes?.success && clubInfoRes.data) {
@@ -120,9 +80,6 @@ function ClubInfoPage() {
           setBoardMembers(boardRes.data || []);
         }
 
-        if (projectRes?.success) {
-          setProjects(projectRes.data || []);
-        }
       } catch (fetchError) {
         console.error('Kulup bilgi verileri yuklenemedi:', fetchError);
         setError('Kulup bilgi verileri yuklenirken bir hata olustu.');
@@ -217,10 +174,7 @@ function ClubInfoPage() {
     };
   }, [boardMembers]);
 
-  const sectionProjects = useMemo(() => getProjectsFromSectionData(sections?.projects), [sections]);
-  const projectContent = sectionProjects.length > 0
-    ? sectionProjects
-    : projects.map(normalizeProjectEntry);
+
 
   const renderSectionContent = () => {
     switch (activeSection) {
@@ -379,39 +333,6 @@ function ClubInfoPage() {
                 )}
               </article>
             ))}
-          </div>
-        );
-
-      case 'projects':
-        return (
-          <div className="club-project-board">
-            {projectContent.length === 0 ? (
-              <p className="club-empty-text">Henuz proje kaydi bulunamadi.</p>
-            ) : (
-              projectContent.map((item, index) => (
-                <article key={`${item._id || item.title}-${index}`} className="club-project-tile">
-                  <div className="club-project-title-row">
-                    <h3>{item.title}</h3>
-                    {item.tag ? <span className="club-tag">{item.tag}</span> : null}
-                  </div>
-
-                  <p>{item.description || 'Bu proje icin aciklama henuz eklenmemis.'}</p>
-
-                  {(item.award || item.year) ? (
-                    <div className="club-project-meta">
-                      {item.award ? <span className="club-award">{item.award}</span> : null}
-                      {item.year ? <span className="club-year">{item.year}</span> : null}
-                    </div>
-                  ) : null}
-
-                  {item._id ? (
-                    <Link to={`/projeler/${item._id}`} className="club-project-link">
-                      Proje Detayi <FiExternalLink />
-                    </Link>
-                  ) : null}
-                </article>
-              ))
-            )}
           </div>
         );
 
