@@ -11,7 +11,7 @@ function Announcements({ announcements = [] }) {
         <div className="section-header">
           <div className="section-title">
             <FiBell size={24} />
-            <h2>Duyurular</h2>
+            <h2><span className="highlight">Duyurular</span></h2>
           </div>
           <div className="section-header-actions">
             <span className="section-meta-pill">

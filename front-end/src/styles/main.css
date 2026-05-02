@@ -280,7 +280,11 @@ main {
   -webkit-text-fill-color: transparent;
 }
 
-.hero-title .highlight {
+.hero-title .highlight,
+.section-title h2 .highlight,
+.widget-title .highlight,
+.gallery-header h3 .highlight,
+.archive-header h1 .highlight {
   background: linear-gradient(135deg, var(--primary), var(--secondary));
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
@@ -804,6 +808,22 @@ main {
 }
 
 /* ===== RESPONSIVE DESIGN ===== */
+
+/* 1920px — geniş ekranlar */
+@media (min-width: 1920px) {
+  :root { --container-width: 1400px; }
+  .hero-title { font-size: 64px; }
+}
+
+/* 1366px / 1280px — küçük laptop */
+@media (max-width: 1366px) {
+  :root { --container-width: 1140px; }
+}
+
+@media (max-width: 1280px) {
+  :root { --container-width: 1080px; }
+}
+
 @media (max-width: 1024px) {
   .hero-content {
     grid-template-columns: 1fr;
@@ -899,6 +919,35 @@ main {
   .event-details {
     flex-direction: column;
     gap: 12px;
+  }
+}
+
+/* 375px – 430px — küçük mobil */
+@media (max-width: 430px) {
+  .container {
+    padding: 0 14px;
+  }
+
+  .hero-title {
+    font-size: 24px;
+  }
+
+  .section-title h2 {
+    font-size: 20px;
+  }
+
+  .hero-description {
+    font-size: 15px;
+  }
+
+  .btn-primary,
+  .btn-secondary {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .section {
+    padding: 40px 0;
   }
 }
 

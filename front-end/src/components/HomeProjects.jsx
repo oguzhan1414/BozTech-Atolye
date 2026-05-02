@@ -11,7 +11,7 @@ function HomeProjects({ projects = [] }) {
         <div className="section-header">
           <div className="section-title">
             <FiFolder size={24} />
-            <h2>Projeler</h2>
+            <h2><span className="highlight">Projeler</span></h2>
           </div>
           <div className="section-header-actions">
             <span className="section-meta-pill">Toplam {projects.length} proje</span>

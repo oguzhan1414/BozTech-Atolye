@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { FiImage } from 'react-icons/fi';
+import { Helmet } from 'react-helmet-async';
 import { photoService } from '../services/photoService';
 import '../styles/ArchivePages.css';
 
@@ -63,10 +64,16 @@ function PhotoGalleryPage() {
   }
 
   return (
+    <>
+    <Helmet>
+      <title>Galeri | BozTech</title>
+      <meta name="description" content="BozTech R&D topluluğunun etkinlik ve proje fotoğraf galerisi." />
+      <link rel="canonical" href="https://boztech.com.tr/galeri" />
+    </Helmet>
     <section className="archive-page section">
       <div className="container">
         <header className="archive-header">
-          <h1><FiImage /> Tum Fotoğraflar</h1>
+          <h1><FiImage /> <span className="highlight">Tüm Fotoğraflar</span></h1>
         </header>
 
         <div className="photo-archive-grid">
@@ -128,6 +135,7 @@ function PhotoGalleryPage() {
         ) : null}
       </div>
     </section>
+    </>
   );
 }
 

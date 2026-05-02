@@ -23,6 +23,13 @@
   margin: 0;
 }
 
+.gallery-header h3 .highlight {
+  background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
 .gallery-counter {
   font-size: 13px;
   color: #93c5fd;

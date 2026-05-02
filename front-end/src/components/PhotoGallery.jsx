@@ -37,7 +37,7 @@ function PhotoGallery({ photos = [] }) {
     return (
       <div className="photo-gallery-slider">
         <div className="gallery-header">
-          <h3>Fotoğraf Galerisi</h3>
+          <h3><span className="highlight">Fotoğraf Galerisi</span></h3>
         </div>
         <div className="slider-empty">
           <FiImage size={40} />

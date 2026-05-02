@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { FiMail, FiPhone, FiMapPin, FiSend } from 'react-icons/fi';
+import { Helmet } from 'react-helmet-async';
 import axiosInstance from '../config/axios';
 import '../styles/contact.css'; // Yeni CSS dosyamızı import ettik
 
@@ -22,6 +23,12 @@ function ContactPage() {
   };
 
   return (
+    <>
+    <Helmet>
+      <title>İletişim | BozTech</title>
+      <meta name="description" content="BozTech R&D topluluğuyla iletişime geçin. Yozgat Bozok Üniversitesi teknoloji kulübü hakkında sorularınız için bize ulaşın." />
+      <link rel="canonical" href="https://boztech.com.tr/contact" />
+    </Helmet>
     <div className="container contact-page">
       <div className="contact-header">
         <h1>İletişime Geçin</h1>
@@ -92,6 +99,7 @@ function ContactPage() {
         </div>
       </div>
     </div>
+    </>
   );
 }
 

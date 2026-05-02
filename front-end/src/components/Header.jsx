@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { FiMenu, FiX, FiUser, FiLogIn } from 'react-icons/fi';
+import { FiMenu, FiX, FiUser } from 'react-icons/fi';
 import './Header.css';
 function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -16,12 +16,12 @@ function Header() {
     <header className="header">
       <div className="container header-container">
         {/* LOGO */}
-        <div className="logo">
+        <Link to="/" className="logo">
           <div className="logo-icon">
             <span>T</span>
           </div>
           <h1 className="logo-text">BozTech </h1>
-        </div>
+        </Link>
 
         {/* DESKTOP NAVIGATION */}
         <nav className="nav-desktop">
@@ -43,9 +43,6 @@ function Header() {
         <div className="header-actions">
           <Link to="/apply" className="btn btn-primary">
             <FiUser /> Başvuru Yap
-          </Link>
-          <Link to="/admin" className="btn btn-outline">
-            <FiLogIn /> Admin Girişi
           </Link>
 
           {/* MOBILE MENU BUTTON */}
@@ -74,9 +71,6 @@ function Header() {
               <div className="mobile-actions">
                 <Link to="/apply" className="btn btn-primary btn-block">
                   <FiUser /> Başvuru Yap
-                </Link>
-                <Link to="/admin" className="btn btn-outline btn-block">
-                  <FiLogIn /> Admin Girişi
                 </Link>
               </div>
             </div>

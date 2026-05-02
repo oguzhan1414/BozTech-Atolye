@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useFormik } from 'formik';
+import { Helmet } from 'react-helmet-async';
 
 import { FiUser, FiMail, FiPhone, FiCalendar, FiFileText, FiBookOpen, FiStar } from 'react-icons/fi';
 import '../styles/basvuru.css';
@@ -63,6 +64,12 @@ function ApplicationPage() {
   }
 
   return (
+    <>
+    <Helmet>
+      <title>Başvuru | BozTech</title>
+      <meta name="description" content="BozTech R&D topluluğuna katılmak için başvurun. Yozgat Bozok Üniversitesi teknoloji topluluğunun bir parçası olun." />
+      <link rel="canonical" href="https://boztech.com.tr/apply" />
+    </Helmet>
     <div className="application-page">
       <div className="bubbles-container">
         {[...Array(6)].map((_, i) => <div key={i} className="bubble"></div>)}
@@ -167,6 +174,7 @@ function ApplicationPage() {
         </div>
       </div>
     </div>
+    </>
   );
 }
 

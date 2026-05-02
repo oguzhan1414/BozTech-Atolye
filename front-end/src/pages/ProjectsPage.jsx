@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { FiCpu } from 'react-icons/fi';
+import { Helmet } from 'react-helmet-async';
 import { projectService } from '../services/projectService';
 import '../styles/ArchivePages.css';
 
@@ -34,10 +35,16 @@ function ProjectsPage() {
   }
 
   return (
+    <>
+    <Helmet>
+      <title>Projeler | BozTech</title>
+      <meta name="description" content="BozTech R&D topluluğunun geliştirdiği tüm projeler. Yapay zeka, mobil uygulama, robotik ve siber güvenlik projeleri." />
+      <link rel="canonical" href="https://boztech.com.tr/projeler" />
+    </Helmet>
     <section className="archive-page section">
       <div className="container">
         <header className="archive-header">
-          <h1><FiCpu /> Tum Projeler</h1>
+          <h1><FiCpu /> <span className="highlight">Tüm Projeler</span></h1>
         </header>
 
         <div className="archive-grid">
@@ -59,6 +66,7 @@ function ProjectsPage() {
         </div>
       </div>
     </section>
+    </>
   );
 }
 

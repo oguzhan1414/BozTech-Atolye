@@ -12,7 +12,7 @@ function UpcomingEvents({ events = [] }) {
         <div className="section-header">
           <div className="section-title">
             <FiCalendar size={24} />
-            <h2>Gelecek Etkinlikler</h2>
+            <h2><span className="highlight">Gelecek Etkinlikler</span></h2>
           </div>
           <div className="section-header-actions">
             <span className="section-meta-pill">

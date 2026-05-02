@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { FiCalendar, FiClock, FiMapPin, FiUsers } from 'react-icons/fi';
+import { Helmet } from 'react-helmet-async';
 import { eventService } from '../services/eventService';
 import '../styles/ArchivePages.css';
 
@@ -46,10 +47,16 @@ function EventsPage() {
   }
 
   return (
+    <>
+    <Helmet>
+      <title>Etkinlikler | BozTech</title>
+      <meta name="description" content="BozTech topluluğunun tüm etkinlikleri. BozTech R&D workshop, seminer ve toplantı duyuruları." />
+      <link rel="canonical" href="https://boztech.com.tr/etkinlikler" />
+    </Helmet>
     <section className="archive-page section">
       <div className="container">
         <header className="archive-header">
-          <h1><FiCalendar /> Tum Etkinlikler</h1>
+          <h1><FiCalendar /> <span className="highlight">Tüm Etkinlikler</span></h1>
         </header>
 
         <div className="archive-filters">
@@ -103,6 +110,7 @@ function EventsPage() {
         </div>
       </div>
     </section>
+    </>
   );
 }
 

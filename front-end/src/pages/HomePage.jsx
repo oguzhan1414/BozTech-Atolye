@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Helmet } from 'react-helmet-async';
 import HeroSection from '../components/HeroSection';
 import Announcements from '../components/Announcements';
 import UpcomingEvents from '../components/UpcomingEvents';
@@ -58,6 +59,12 @@ function HomePage() {
   }
 
   return (
+    <>
+    <Helmet>
+      <title>BozTech | Yozgat Bozok Üniversitesi Teknoloji Topluluğu</title>
+      <meta name="description" content="BozTech (BozTech R&D), Yozgat Bozok Üniversitesi'nin teknoloji ve Ar-Ge topluluğudur. Yapay zeka, mobil uygulama, robotik ve siber güvenlik alanlarında projeler geliştiriyoruz." />
+      <link rel="canonical" href="https://boztech.com.tr/" />
+    </Helmet>
     <div className="home-page">
       {/* Baloncuklar HeroSection'ın arka planında süzülecek */}
       <div className="hero-wrapper" style={{ position: 'relative' }}>
@@ -89,6 +96,7 @@ function HomePage() {
         </div>
       </div>
     </div>
+    </>
   );
 }
 

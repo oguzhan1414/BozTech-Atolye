@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { FiBell, FiCalendar } from 'react-icons/fi';
+import { Helmet } from 'react-helmet-async';
 import { announcementService } from '../services/announcementService';
 import '../styles/ArchivePages.css';
 
@@ -34,10 +35,16 @@ function AnnouncementsPage() {
   }
 
   return (
+    <>
+    <Helmet>
+      <title>Duyurular | BozTech</title>
+      <meta name="description" content="BozTech topluluğunun tüm duyurularına ulaşın. BozTech R&D etkinlikleri, haberler ve güncellemeler." />
+      <link rel="canonical" href="https://boztech.com.tr/duyurular" />
+    </Helmet>
     <section className="archive-page section">
       <div className="container">
         <header className="archive-header">
-          <h1><FiBell /> Tum Duyurular</h1>
+          <h1><FiBell /> <span className="highlight">Tüm Duyurular</span></h1>
         </header>
 
         <div className="archive-grid">
@@ -64,6 +71,7 @@ function AnnouncementsPage() {
         </div>
       </div>
     </section>
+    </>
   );
 }
 
