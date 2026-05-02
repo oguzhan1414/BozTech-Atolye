@@ -176,21 +176,27 @@
 
 /* Responsive */
 @media (max-width: 640px) {
+  .ue-grid {
+    grid-template-columns: 1fr;
+  }
+
   .ue-card {
-    flex-direction: column;
-  }
-  .ue-date-box {
     flex-direction: row;
-    gap: 8px;
-    padding: 12px;
-    border-right: none;
-    border-bottom: 1px solid rgba(0,0,0,0.05);
+    align-items: stretch;
   }
+
+  .ue-date-box {
+    min-width: 70px;
+    max-width: 70px;
+    padding: 16px 10px;
+  }
+
   .ue-day {
-    font-size: 1.4rem;
+    font-size: 1.5rem;
   }
-  .ue-month {
-    margin-top: 0;
+
+  .ue-content {
+    padding: 14px;
   }
 
   .ue-details {
@@ -199,6 +205,22 @@
 
   .ue-detail-item:nth-child(3) {
     grid-column: auto;
+  }
+}
+
+@media (max-width: 360px) {
+  .ue-date-box {
+    min-width: 60px;
+    max-width: 60px;
+    padding: 12px 8px;
+  }
+
+  .ue-day {
+    font-size: 1.3rem;
+  }
+
+  .ue-month {
+    font-size: 0.7rem;
   }
 }
 

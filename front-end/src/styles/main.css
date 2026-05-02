@@ -51,6 +51,7 @@
 
 html {
   scroll-behavior: smooth;
+  overflow-x: hidden;
 }
 
 body {
@@ -59,6 +60,7 @@ body {
   color: var(--text-primary);
   line-height: 1.6;
   min-height: 100vh;
+  overflow-x: hidden;
 }
 
 #root {
@@ -72,6 +74,7 @@ body {
   min-height: 100vh;
   display: flex;
   flex-direction: column;
+  overflow-x: hidden;
 }
 
 main {
@@ -229,7 +232,7 @@ main {
 
 /* ===== HERO SECTION ===== */
 .hero-section {
-  padding: 96px 0 88px;
+  padding: 80px 0 72px;
   background: linear-gradient(135deg,
       rgba(30, 41, 59, 0.8) 0%,
       rgba(15, 23, 42, 1) 100%);
@@ -278,6 +281,8 @@ main {
   background: linear-gradient(135deg, #ffffff 0%, #cbd5e1 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
+  word-break: break-word;
+  overflow-wrap: break-word;
 }
 
 .hero-title .highlight,
@@ -296,6 +301,7 @@ main {
   margin-bottom: 32px;
   line-height: 1.7;
   max-width: 64ch;
+  overflow-wrap: break-word;
 }
 
 .hero-stats {
@@ -844,12 +850,25 @@ main {
 }
 
 @media (max-width: 768px) {
+  .hero-section {
+    padding: 56px 0 48px;
+  }
+
+  .hero-image {
+    display: none;
+  }
+
   .hero-title {
     font-size: 32px;
   }
 
   .hero-buttons {
     flex-direction: column;
+  }
+
+  .btn-lg {
+    width: 100%;
+    justify-content: center;
   }
 
   .section-header {
@@ -928,8 +947,12 @@ main {
     padding: 0 14px;
   }
 
+  .hero-section {
+    padding: 40px 0 36px;
+  }
+
   .hero-title {
-    font-size: 24px;
+    font-size: 22px;
   }
 
   .section-title h2 {
@@ -937,17 +960,43 @@ main {
   }
 
   .hero-description {
-    font-size: 15px;
+    font-size: 14px;
   }
 
   .btn-primary,
-  .btn-secondary {
+  .btn-secondary,
+  .btn-outline,
+  .btn-lg {
     width: 100%;
     justify-content: center;
   }
 
   .section {
-    padding: 40px 0;
+    padding: 36px 0;
+  }
+
+  .hero-badge {
+    font-size: 12px;
+    padding: 6px 12px;
+  }
+}
+
+/* 320px — çok küçük ekranlar */
+@media (max-width: 360px) {
+  .container {
+    padding: 0 12px;
+  }
+
+  .hero-title {
+    font-size: 20px;
+  }
+
+  .hero-description {
+    font-size: 13px;
+  }
+
+  .section-title h2 {
+    font-size: 18px;
   }
 }
 

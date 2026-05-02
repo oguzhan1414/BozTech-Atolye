@@ -78,7 +78,7 @@ function ApplicationPage() {
       <div className="container">
         <div className="app-header fade-in">
           <h1>BozTech'e Katıl</h1>
-          <p className="text-muted">Teknoloji mutfağımızda senin için de bir yer var.</p>
+          <p className="text-muted">Formu doldur, başvurunu değerlendirelim.</p>
         </div>
 
         <div className="application-form-container fade-in">
