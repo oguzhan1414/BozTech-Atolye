@@ -30,7 +30,7 @@ exports.submitContactForm = async (req, res) => {
     `;
 
     await sendEmail({
-      email: process.env.SMTP_USER, // Admin'in kendi mail hesabına düşer
+      email: process.env.CONTACT_EMAIL,
       subject: `BozTech İletişim: ${name} size ulaştı`,
       html: htmlContent
     });

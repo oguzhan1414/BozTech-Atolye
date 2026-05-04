@@ -1,33 +1,25 @@
-const nodemailer = require('nodemailer');
+const { Resend } = require('resend');
 
 const sendEmail = async (options) => {
-  // 1. Transporter oluştur
-  const transporter = nodemailer.createTransport({
-    host: process.env.SMTP_HOST || 'smtp.gmail.com',
-    port: process.env.SMTP_PORT || 587,
-    auth: {
-      user: process.env.SMTP_USER,
-      pass: process.env.SMTP_PASS
-    }
-  });
-
-  // 2. Mail seçeneklerini tanımla
-  const message = {
-    from: process.env.FROM_EMAIL || 'BozTech Atölye <noreply@boztech.com>',
-    to: options.email,
-    replyTo: options.replyTo || process.env.SMTP_USER,
-    subject: options.subject,
-    text: options.message,
-    html: options.html
-  };
-
-  // 3. Maili gönder
   try {
-    const info = await transporter.sendMail(message);
-    console.log('Email successfully sent: %s', info.messageId);
+    const resend = new Resend(process.env.RESEND_API_KEY);
+    const { data, error } = await resend.emails.send({
+      from: 'BozTech <noreply@boztechrd.com.tr>',
+      to: options.email,
+      subject: options.subject,
+      html: options.html,
+      replyTo: options.replyTo || undefined,
+    });
+
+    if (error) {
+      console.error('Email sending failed:', error.message);
+      return false;
+    }
+
+    console.log('Email successfully sent:', data.id);
     return true;
   } catch (err) {
-    console.error('Email sending failed (Check your SMTP credentials in .env!):', err.message);
+    console.error('Email sending failed:', err.message);
     return false;
   }
 };

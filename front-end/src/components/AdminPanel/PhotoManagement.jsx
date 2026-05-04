@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { FiEdit2, FiTrash2, FiEye, FiPlus, FiSearch, FiFilter, FiImage, FiUpload } from 'react-icons/fi';
+import { FiEdit2, FiTrash2, FiPlus, FiSearch, FiFilter, FiUpload } from 'react-icons/fi';
 import { photoService } from '../../services/photoService';
 import ConfirmDeleteModal from './ConfirmDeleteModal';
 import UnsavedChangesModal from './UnsavedChangesModal';
 import { useUnsavedChangesPrompt } from '../../hooks/useUnsavedChangesPrompt';
+import { useToast } from '../../hooks/useToast';
+import Toast from './Toast';
 
 function PhotoManagement() {
   const [photos, setPhotos] = useState([]);
@@ -15,20 +17,15 @@ function PhotoManagement() {
   const [error, setError] = useState('');
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [deleting, setDeleting] = useState(false);
-  const [feedback, setFeedback] = useState(null);
+  const { toast, showToast, hideToast } = useToast();
 
-  // Backend'den fotoğrafları çek
-  useEffect(() => {
-    fetchPhotos();
-  }, []);
+  useEffect(() => { fetchPhotos(); }, []);
 
   const fetchPhotos = async () => {
     try {
       setLoading(true);
       const response = await photoService.getAllAdmin();
-      if (response.success) {
-        setPhotos(response.data || []);
-      }
+      if (response.success) setPhotos(response.data || []);
     } catch (error) {
       console.error('Fotoğraflar yüklenirken hata:', error);
       setError('Fotoğraflar yüklenirken bir hata oluştu');
@@ -37,96 +34,66 @@ function PhotoManagement() {
     }
   };
 
-  const handleAdd = () => {
-    setEditingPhoto(null);
-    setShowModal(true);
-  };
-
-  const handleEdit = (photo) => {
-    setEditingPhoto(photo);
-    setShowModal(true);
-  };
-
-  const getErrorMessage = (apiError, fallbackMessage) => {
-    if (apiError && typeof apiError.message === 'string') {
-      return apiError.message;
-    }
-    return fallbackMessage;
-  };
-
-  const handleDeleteRequest = (photo) => {
-    setDeleteTarget(photo);
-    setFeedback(null);
-  };
+  const handleAdd = () => { setEditingPhoto(null); setShowModal(true); };
+  const handleEdit = (photo) => { setEditingPhoto(photo); setShowModal(true); };
+  const handleDeleteRequest = (photo) => setDeleteTarget(photo);
 
   const handleDeleteConfirm = async () => {
     if (!deleteTarget) return;
-
     try {
       setDeleting(true);
       const response = await photoService.delete(deleteTarget._id);
       if (response.success) {
-        setPhotos((prev) => prev.filter((p) => p._id !== deleteTarget._id));
-        setFeedback({
-          type: 'success',
-          message: 'Fotograf kalici olarak silindi.'
-        });
+        setPhotos(prev => prev.filter(p => p._id !== deleteTarget._id));
+        showToast('Fotoğraf kalıcı olarak silindi.');
       }
       setDeleteTarget(null);
     } catch (apiError) {
-      console.error('Fotograf silinirken hata:', apiError);
-      setFeedback({
-        type: 'error',
-        message: getErrorMessage(apiError, 'Fotograf silinirken bir hata olustu')
-      });
+      console.error('Fotoğraf silinirken hata:', apiError);
+      showToast('Fotoğraf silinirken bir hata oluştu.', 'error');
     } finally {
       setDeleting(false);
     }
   };
 
-  const handleSave = async (formData) => {
+  const handleSave = async (payload, hasNewFile) => {
     try {
       if (editingPhoto) {
-        // Güncelle
-        const response = await photoService.update(editingPhoto._id, formData);
+        let response;
+        if (hasNewFile) {
+          response = await photoService.updateWithFile(editingPhoto._id, payload);
+        } else {
+          response = await photoService.update(editingPhoto._id, payload);
+        }
         if (response.success) {
           setPhotos(photos.map(p => p._id === editingPhoto._id ? response.data : p));
+          showToast('Fotoğraf güncellendi.');
         }
       } else {
-        // Yeni ekle - formData FormData objesi
-        const response = await photoService.upload(formData);
+        const response = await photoService.upload(payload);
         if (response.success) {
           setPhotos([response.data, ...photos]);
+          showToast('Fotoğraf yüklendi.');
         }
       }
       setShowModal(false);
     } catch (error) {
       console.error('Fotoğraf kaydedilirken hata:', error);
-      alert('Fotoğraf kaydedilirken bir hata oluştu');
+      showToast('Fotoğraf kaydedilirken bir hata oluştu.', 'error');
     }
   };
 
-  // Tarih formatla
-  const formatDate = (dateString) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('tr-TR');
-  };
+  const formatDate = (dateString) => new Date(dateString).toLocaleDateString('tr-TR');
 
-  // Filtreleme
   const filteredPhotos = photos.filter(p => {
     const matchesSearch = p.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         p.tags?.some(tag => tag.includes(searchTerm.toLowerCase()));
+      p.tags?.some(tag => tag.includes(searchTerm.toLowerCase()));
     const matchesFilter = filterCategory === 'all' || p.category === filterCategory;
     return matchesSearch && matchesFilter;
   });
 
-  if (loading) {
-    return <div className="loading">Yükleniyor...</div>;
-  }
-
-  if (error) {
-    return <div className="error-message">{error}</div>;
-  }
+  if (loading) return <div className="loading">Yükleniyor...</div>;
+  if (error) return <div className="error-message">{error}</div>;
 
   return (
     <div className="content-section">
@@ -137,28 +104,14 @@ function PhotoManagement() {
         </button>
       </div>
 
-      {feedback ? (
-        <div className={`admin-feedback ${feedback.type}`}>
-          <span>{feedback.message}</span>
-          <button type="button" onClick={() => setFeedback(null)} aria-label="Bildirimi kapat">
-            ×
-          </button>
-        </div>
-      ) : null}
-
       <div className="filters-bar">
         <div className="search-box">
           <FiSearch />
-          <input 
-            type="text" 
-            placeholder="Fotoğraf ara..." 
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
+          <input type="text" placeholder="Fotoğraf ara..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
         </div>
         <div className="filter-box">
           <FiFilter />
-          <select value={filterCategory} onChange={(e) => setFilterCategory(e.target.value)}>
+          <select value={filterCategory} onChange={e => setFilterCategory(e.target.value)}>
             <option value="all">Tüm Kategoriler</option>
             <option value="Teknik">Teknik</option>
             <option value="Eğitim">Eğitim</option>
@@ -173,33 +126,24 @@ function PhotoManagement() {
         {filteredPhotos.length === 0 ? (
           <p className="text-center">Fotoğraf bulunamadı</p>
         ) : (
-          filteredPhotos.map((photo) => (
+          filteredPhotos.map(photo => (
             <div key={photo._id} className="photo-card">
               <div className="photo-preview">
-                <img 
-                  src={photo.imageUrl} 
+                <img
+                  src={photo.imageUrl}
                   alt={photo.title}
-                  onError={(e) => {
-                    e.target.onerror = null;
-                    e.target.src = '/placeholders/image-fallback.svg';
-                  }}
+                  onError={e => { e.target.onerror = null; e.target.src = '/placeholders/image-fallback.svg'; }}
                 />
                 <div className="photo-actions">
-                  <button className="btn-icon" onClick={() => handleEdit(photo)} title="Düzenle">
-                    <FiEdit2 />
-                  </button>
-                  <button className="btn-icon" onClick={() => handleDeleteRequest(photo)} title="Sil">
-                    <FiTrash2 />
-                  </button>
+                  <button className="btn-icon" onClick={() => handleEdit(photo)} title="Düzenle"><FiEdit2 /></button>
+                  <button className="btn-icon" onClick={() => handleDeleteRequest(photo)} title="Sil"><FiTrash2 /></button>
                 </div>
               </div>
               <div className="photo-info">
                 <h4>{photo.title}</h4>
                 <p>{photo.category}</p>
                 <div className="photo-tags">
-                  {photo.tags?.map((tag, i) => (
-                    <span key={i} className="tag">#{tag}</span>
-                  ))}
+                  {photo.tags?.map((tag, i) => <span key={i} className="tag">#{tag}</span>)}
                 </div>
                 <div className="photo-meta">
                   <span>{photo.uploadedBy?.name || 'Admin'}</span>
@@ -212,27 +156,24 @@ function PhotoManagement() {
       </div>
 
       {showModal && (
-        <PhotoModal 
-          photo={editingPhoto}
-          onClose={() => setShowModal(false)}
-          onSave={handleSave}
-        />
+        <PhotoModal photo={editingPhoto} onClose={() => setShowModal(false)} onSave={handleSave} />
       )}
 
       <ConfirmDeleteModal
         isOpen={Boolean(deleteTarget)}
-        title="Fotografi Kalici Sil"
-        message="Bu fotograf silindiginde hem veritabanindan hem de sunucudaki dosyalardan kaldirilir."
+        title="Fotoğrafı Kalıcı Sil"
+        message="Bu fotoğraf silindiğinde hem veritabanından hem de sunucudaki dosyalardan kaldırılır."
         itemName={deleteTarget?.title}
         loading={deleting}
         onCancel={() => setDeleteTarget(null)}
         onConfirm={handleDeleteConfirm}
       />
+
+      <Toast toast={toast} onClose={hideToast} />
     </div>
   );
 }
 
-// Modal Component
 function PhotoModal({ photo, onClose, onSave }) {
   const [formData, setFormData] = useState({
     title: photo?.title || '',
@@ -243,25 +184,11 @@ function PhotoModal({ photo, onClose, onSave }) {
   const [previewUrl, setPreviewUrl] = useState(photo?.imageUrl || null);
   const [saving, setSaving] = useState(false);
   const [isDirty, setIsDirty] = useState(false);
-  const {
-    isWarningOpen,
-    message,
-    requestConfirmation,
-    handleCancelLeave,
-    handleConfirmLeave,
-  } = useUnsavedChangesPrompt(isDirty, 'Kaydedilmemis fotograf degisiklikleri var. Ayrilirsaniz degisiklikler kaybolacak.');
+  const { isWarningOpen, message, requestConfirmation, handleCancelLeave, handleConfirmLeave } =
+    useUnsavedChangesPrompt(isDirty, 'Kaydedilmemiş fotoğraf değişiklikleri var. Ayrılırsanız değişiklikler kaybolacak.');
 
-  const handleFieldChange = (field, value) => {
-    setIsDirty(true);
-    setFormData((prev) => ({ ...prev, [field]: value }));
-  };
-
-  const handleAttemptClose = () => {
-    requestConfirmation(() => {
-      setIsDirty(false);
-      onClose();
-    });
-  };
+  const handleFieldChange = (field, value) => { setIsDirty(true); setFormData(prev => ({ ...prev, [field]: value })); };
+  const handleAttemptClose = () => requestConfirmation(() => { setIsDirty(false); onClose(); });
 
   const handleFileChange = (e) => {
     const file = e.target.files[0];
@@ -269,9 +196,7 @@ function PhotoModal({ photo, onClose, onSave }) {
       setIsDirty(true);
       setSelectedFile(file);
       const reader = new FileReader();
-      reader.onloadend = () => {
-        setPreviewUrl(reader.result);
-      };
+      reader.onloadend = () => setPreviewUrl(reader.result);
       reader.readAsDataURL(file);
     }
   };
@@ -279,59 +204,41 @@ function PhotoModal({ photo, onClose, onSave }) {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setSaving(true);
+    const tagsArray = formData.tags.split(',').map(t => t.trim()).filter(Boolean);
 
-    const tagsArray = formData.tags.split(',').map(tag => tag.trim()).filter(tag => tag);
-
-    if (photo) {
-      // Düzenleme - sadece metin verileri
-      await onSave({
-        title: formData.title,
-        category: formData.category,
-        tags: tagsArray
-      });
+    if (photo && !selectedFile) {
+      // Edit - sadece metadata
+      await onSave({ title: formData.title, category: formData.category, tags: tagsArray }, false);
     } else {
-      // Yeni fotoğraf - FormData ile
-      const formDataObj = new FormData();
-      formDataObj.append('title', formData.title);
-      formDataObj.append('category', formData.category);
-      formDataObj.append('tags', tagsArray.join(','));
-      if (selectedFile) {
-        formDataObj.append('photo', selectedFile);
-      }
-      await onSave(formDataObj);
+      // Yeni fotoğraf veya resim değişikliği → FormData
+      const fd = new FormData();
+      fd.append('title', formData.title);
+      fd.append('category', formData.category);
+      fd.append('tags', tagsArray.join(','));
+      if (selectedFile) fd.append('photo', selectedFile);
+      await onSave(fd, true);
     }
-
     setIsDirty(false);
     setSaving(false);
   };
 
   return (
     <div className="modal-overlay" onClick={handleAttemptClose}>
-      <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+      <div className="modal-content" onClick={e => e.stopPropagation()}>
         <div className="modal-header">
           <h3>{photo ? 'Fotoğraf Düzenle' : 'Yeni Fotoğraf'}</h3>
           <button className="modal-close" onClick={handleAttemptClose}>×</button>
         </div>
-        
+
         <form onSubmit={handleSubmit}>
           <div className="form-group">
             <label>Başlık</label>
-            <input 
-              type="text" 
-              value={formData.title}
-              onChange={(e) => handleFieldChange('title', e.target.value)}
-              required
-              disabled={saving}
-            />
+            <input type="text" value={formData.title} onChange={e => handleFieldChange('title', e.target.value)} required disabled={saving} />
           </div>
 
           <div className="form-group">
             <label>Kategori</label>
-            <select 
-              value={formData.category}
-              onChange={(e) => handleFieldChange('category', e.target.value)}
-              disabled={saving}
-            >
+            <select value={formData.category} onChange={e => handleFieldChange('category', e.target.value)} disabled={saving}>
               <option value="Teknik">Teknik</option>
               <option value="Eğitim">Eğitim</option>
               <option value="Sosyal">Sosyal</option>
@@ -340,79 +247,58 @@ function PhotoModal({ photo, onClose, onSave }) {
             </select>
           </div>
 
-          {!photo && (
-            <div className="form-group">
-              <label>Fotoğraf Yükle</label>
-              <div className="upload-area">
-                {previewUrl ? (
-                  <div className="preview-container">
-                    <img src={previewUrl} alt="Önizleme" className="preview-image" />
-                    <button 
-                      type="button"
-                      className="change-photo-btn"
-                      onClick={() => {
-                        setIsDirty(true);
-                        setSelectedFile(null);
-                        setPreviewUrl(null);
-                      }}
-                    >
-                      Değiştir
-                    </button>
-                  </div>
-                ) : (
-                  <>
-                    <FiUpload size={24} />
-                    <p>Fotoğraf seçmek için tıklayın veya sürükleyin</p>
-                    <input 
-                      type="file" 
-                      accept="image/*" 
-                      onChange={handleFileChange}
-                      required={!photo}
-                      disabled={saving}
-                    />
-                  </>
-                )}
-              </div>
+          {/* Fotoğraf alanı - hem yeni eklemede hem düzenlemede görünür */}
+          <div className="form-group">
+            <label>{photo ? 'Fotoğrafı Değiştir (opsiyonel)' : 'Fotoğraf Yükle'}</label>
+            <div className="upload-area">
+              {previewUrl ? (
+                <div className="preview-container">
+                  <img src={previewUrl} alt="Önizleme" className="preview-image" />
+                  <button
+                    type="button"
+                    className="change-photo-btn"
+                    onClick={() => { setIsDirty(true); setSelectedFile(null); setPreviewUrl(photo?.imageUrl || null); }}
+                  >
+                    {selectedFile ? 'Seçimi İptal Et' : 'Değiştir'}
+                  </button>
+                  {selectedFile && (
+                    <label style={{ display: 'block', marginTop: '8px', cursor: 'pointer', color: '#3b82f6', fontSize: '13px' }}>
+                      Başka fotoğraf seç
+                      <input type="file" accept="image/*" onChange={handleFileChange} style={{ display: 'none' }} disabled={saving} />
+                    </label>
+                  )}
+                </div>
+              ) : (
+                <>
+                  <FiUpload size={24} />
+                  <p>Fotoğraf seçmek için tıklayın veya sürükleyin</p>
+                  <input type="file" accept="image/*" onChange={handleFileChange} required={!photo} disabled={saving} />
+                </>
+              )}
             </div>
-          )}
+          </div>
 
           <div className="form-group">
             <label>Etiketler (virgülle ayırın)</label>
-            <input 
-              type="text" 
+            <input
+              type="text"
               value={formData.tags}
-              onChange={(e) => handleFieldChange('tags', e.target.value)}
+              onChange={e => handleFieldChange('tags', e.target.value)}
               placeholder="hackathon, kodlama, yarışma"
               disabled={saving}
             />
           </div>
 
           <div className="form-actions">
-            <button 
-              type="button" 
-              className="btn btn-outline" 
-              onClick={handleAttemptClose}
-              disabled={saving}
-            >
-              İptal
-            </button>
-            <button 
-              type="submit" 
-              className="btn btn-primary"
-              disabled={saving || (!photo && !selectedFile)}
-            >
+            <button type="button" className="btn btn-outline" onClick={handleAttemptClose} disabled={saving}>İptal</button>
+            <button type="submit" className="btn btn-primary" disabled={saving || (!photo && !selectedFile)}>
               {saving ? 'Kaydediliyor...' : 'Kaydet'}
             </button>
           </div>
         </form>
       </div>
 
-      <UnsavedChangesModal
-        isOpen={isWarningOpen}
-        message={message}
-        onCancel={handleCancelLeave}
-        onConfirm={handleConfirmLeave}
-      />
+      <UnsavedChangesModal isOpen={isWarningOpen} message={message} onCancel={handleCancelLeave} onConfirm={handleConfirmLeave} />
     </div>
   );
 }

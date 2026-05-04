@@ -43,10 +43,20 @@ export const photoService = {
     }
   },
 
-  // Fotoğraf güncelle
+  // Fotoğraf güncelle (sadece metadata)
   update: async (id, data) => {
     try {
       const response = await photoApi.put(id, data);
+      return response;
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  // Fotoğraf güncelle (yeni dosya ile)
+  updateWithFile: async (id, formData) => {
+    try {
+      const response = await photoApi.putFormData(id, formData);
       return response;
     } catch (error) {
       throw error;

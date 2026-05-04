@@ -16,6 +16,8 @@ import { announcementService } from '../../services/announcementService';
 import { eventService } from '../../services/eventService';
 import { photoService } from '../../services/photoService';
 import { useNavigate } from 'react-router-dom';
+import { useToast } from '../../hooks/useToast';
+import Toast from './Toast';
 
 function Dashboard() {
   const [stats, setStats] = useState({
@@ -35,6 +37,7 @@ function Dashboard() {
   const [sendingMail, setSendingMail] = useState(false);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
+  const { toast, showToast, hideToast } = useToast();
   const userRole = localStorage.getItem('userRole') || 'viewer';
   const storedPermissions = JSON.parse(localStorage.getItem('userPermissions') || '{}');
 
@@ -149,7 +152,7 @@ function Dashboard() {
         fetchDashboardData(); // Update badges behind the scenes
       }
     } catch (err) {
-      alert("Durum güncellenirken hata oluştu.");
+      showToast('Durum güncellenirken hata oluştu.', 'error');
     }
   };
 
@@ -162,17 +165,17 @@ function Dashboard() {
   const handleSendMail = async (e) => {
     e.preventDefault();
     if (!mailData.subject || !mailData.message) {
-      alert("Lütfen konu ve mesaj alanlarını doldurun.");
+      showToast('Lütfen konu ve mesaj alanlarını doldurun.', 'error');
       return;
     }
     setSendingMail(true);
     try {
       await applicationService.sendEmail(mailModalApp.id, mailData.subject, mailData.message);
-      alert("Mail başarıyla gönderildi!");
+      showToast('Mail başarıyla gönderildi.');
       setMailModalApp(null);
     } catch (err) {
       console.error(err);
-      alert("Mail gönderilirken bir hata oluştu. SMTP ayarlarınızı kontrol edin.");
+      showToast('Mail gönderilirken bir hata oluştu.', 'error');
     } finally {
       setSendingMail(false);
     }
@@ -452,6 +455,7 @@ function Dashboard() {
         </div>
       )}
 
+      <Toast toast={toast} onClose={hideToast} />
     </div>
   );
 }
