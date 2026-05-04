@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { FiSearch, FiFilter, FiCheck, FiX, FiClock, FiMail, FiEye, FiUser, FiPhone, FiBook, FiFileText } from 'react-icons/fi';
+import { FiSearch, FiFilter, FiCheck, FiX, FiClock, FiMail, FiEye, FiUser, FiPhone, FiBook, FiFileText, FiTrash2 } from 'react-icons/fi';
 import { applicationService } from '../../services/applicationService';
 import UnsavedChangesModal from './UnsavedChangesModal';
 import { useUnsavedChangesPrompt } from '../../hooks/useUnsavedChangesPrompt';
 import { useToast } from '../../hooks/useToast';
 import Toast from './Toast';
+import ConfirmDeleteModal from './ConfirmDeleteModal';
 
 const statusBadge = (status) => {
   const map = {
@@ -115,6 +116,8 @@ function ApplicationsManagement() {
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('');
   const [detailApp, setDetailApp] = useState(null);
+  const [deleteTarget, setDeleteTarget] = useState(null);
+  const [deleting, setDeleting] = useState(false);
 
   const [mailModalApp, setMailModalApp] = useState(null);
   const [mailData, setMailData] = useState({ subject: '', message: '' });
@@ -155,6 +158,23 @@ function ApplicationsManagement() {
       }
     } catch {
       showToast('Durum güncellenirken hata oluştu.', 'error');
+    }
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!deleteTarget) return;
+    try {
+      setDeleting(true);
+      const res = await applicationService.delete(deleteTarget._id);
+      if (res.success) {
+        fetchApplications();
+        showToast('Başvuru silindi. Kişi tekrar başvurabilir.');
+      }
+      setDeleteTarget(null);
+    } catch {
+      showToast('Başvuru silinirken hata oluştu.', 'error');
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -249,6 +269,7 @@ function ApplicationsManagement() {
                         </>
                       )}
                       <button onClick={() => handleMailClick(app)} title="Özel Mail Gönder" style={{ background: 'rgba(59,130,246,0.1)', color: '#3b82f6', border: 'none', borderRadius: '8px', padding: '8px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><FiMail size={16} /></button>
+                      <button onClick={() => setDeleteTarget(app)} title="Başvuruyu Sil" style={{ background: 'rgba(239,68,68,0.1)', color: '#ef4444', border: 'none', borderRadius: '8px', padding: '8px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><FiTrash2 size={16} /></button>
                     </div>
                   </td>
                 </tr>
@@ -301,6 +322,15 @@ function ApplicationsManagement() {
         </div>
       )}
 
+      <ConfirmDeleteModal
+        isOpen={Boolean(deleteTarget)}
+        title="Başvuruyu Sil"
+        message="Bu başvuru silindiğinde kayıt tamamen kaldırılır. Kişi aynı bilgilerle tekrar başvurabilir."
+        itemName={deleteTarget ? `${deleteTarget.firstName} ${deleteTarget.lastName}` : ''}
+        loading={deleting}
+        onCancel={() => setDeleteTarget(null)}
+        onConfirm={handleDeleteConfirm}
+      />
       <UnsavedChangesModal isOpen={isWarningOpen} message={message} onCancel={handleCancelLeave} onConfirm={handleConfirmLeave} />
       <Toast toast={toast} onClose={hideToast} />
     </div>

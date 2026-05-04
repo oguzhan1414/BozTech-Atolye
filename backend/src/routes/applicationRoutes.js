@@ -11,7 +11,8 @@ const {
   exportToCSV,
   getApplicationStats,
   getMyApplications,
-  sendCustomEmail
+  sendCustomEmail,
+  deleteApplication
 } = require('../controllers/applicationController');
 const { protect, authorize, checkPermission } = require('../midleware/auth');
 
@@ -43,5 +44,6 @@ router.get('/:id', protect, checkPermission('applications'), getApplicationById)
 router.put('/:id/status', protect, checkPermission('applications'), updateApplicationStatus);
 router.post('/:id/notes', protect, checkPermission('applications'), addApplicationNote);
 router.post('/:id/send-email', protect, checkPermission('applications'), sendCustomEmail);
+router.delete('/:id', protect, authorize('admin'), deleteApplication);
 
 module.exports = router;

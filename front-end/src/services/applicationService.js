@@ -93,6 +93,16 @@ export const applicationService = {
     }
   },
 
+  // Başvuru sil (admin)
+  delete: async (id) => {
+    try {
+      const response = await applicationApi.delete(id);
+      return response;
+    } catch (error) {
+      throw error;
+    }
+  },
+
   // Kullanıcının kendi başvuruları
   getMyApplications: async (email) => {
     try {

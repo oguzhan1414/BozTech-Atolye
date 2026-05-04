@@ -641,6 +641,24 @@ const getMyApplications = async (req, res) => {
   }
 };
 
+// @desc    Başvuruyu sil (Admin)
+// @route   DELETE /api/applications/:id
+// @access  Private (Admin only)
+const deleteApplication = async (req, res) => {
+  try {
+    const application = await Application.findByIdAndDelete(req.params.id);
+
+    if (!application) {
+      return res.status(404).json({ success: false, message: 'Başvuru bulunamadı' });
+    }
+
+    res.json({ success: true, message: 'Başvuru silindi' });
+  } catch (error) {
+    console.error('Başvuru silinirken hata:', error);
+    res.status(500).json({ success: false, message: 'Sunucu hatası' });
+  }
+};
+
 module.exports = {
   createApplication,
   getApplications,
@@ -651,5 +669,6 @@ module.exports = {
   exportToCSV,
   getApplicationStats,
   getMyApplications,
-  sendCustomEmail
+  sendCustomEmail,
+  deleteApplication
 };
